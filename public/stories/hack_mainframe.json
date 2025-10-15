@@ -1,0 +1,466 @@
+{
+  "id": "hack_mainframe",
+  "title": "Hack the Mainframe",
+  "description": "You're a skilled hacker trying to infiltrate a corrupt corporation's mainframe. Use Linux commands to navigate their system, find evidence, and expose their secrets.",
+  "theme": "cyberpunk",
+  "initialFileSystem": {
+    "root": {
+      "home": {
+        "type": "directory",
+        "name": "home",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "hacker": {
+            "type": "directory",
+            "name": "hacker",
+            "permissions": "rwxr-xr-x",
+            "owner": "hacker",
+            "children": {
+              "welcome.txt": {
+                "type": "file",
+                "name": "welcome.txt",
+                "permissions": "rw-r--r--",
+                "owner": "hacker",
+                "content": "Welcome, hacker.\n\nYour mission: infiltrate CyberCorp's mainframe and expose their illegal activities.\n\nStart by exploring the system. Use 'ls' to list files and 'cd' to change directories.\nThe corporate files are locked down, but you have the skills to get in.\n\nGood luck. The resistance is counting on you.\n\n- Ghost"
+              },
+              "tools": {
+                "type": "directory",
+                "name": "tools",
+                "permissions": "rwxr-xr-x",
+                "owner": "hacker",
+                "children": {}
+              }
+            }
+          }
+        }
+      },
+      "var": {
+        "type": "directory",
+        "name": "var",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "log": {
+            "type": "directory",
+            "name": "log",
+            "permissions": "rwxr-xr-x",
+            "owner": "root",
+            "children": {
+              "system.log": {
+                "type": "file",
+                "name": "system.log",
+                "permissions": "rw-r--r--",
+                "owner": "root",
+                "content": "2024-10-15 08:23:11 - System boot\n2024-10-15 08:23:45 - Network interface eth0 up\n2024-10-15 09:15:22 - Unauthorized access attempt detected\n2024-10-15 09:15:23 - Access denied\n2024-10-15 12:00:00 - Scheduled backup initiated\n2024-10-15 12:30:15 - Backup completed\n2024-10-15 14:45:33 - Security scan completed"
+              }
+            }
+          }
+        }
+      },
+      "srv": {
+        "type": "directory",
+        "name": "srv",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "cybercorp": {
+            "type": "directory",
+            "name": "cybercorp",
+            "permissions": "rwxr-xr-x",
+            "owner": "admin",
+            "children": {
+              "public": {
+                "type": "directory",
+                "name": "public",
+                "permissions": "rwxr-xr-x",
+                "owner": "admin",
+                "children": {
+                  "index.html": {
+                    "type": "file",
+                    "name": "index.html",
+                    "permissions": "rw-r--r--",
+                    "owner": "admin",
+                    "content": "<!DOCTYPE html>\n<html>\n<head><title>CyberCorp</title></head>\n<body>\n<h1>Welcome to CyberCorp</h1>\n<p>Innovation. Excellence. Trust.</p>\n</body>\n</html>"
+                  }
+                }
+              },
+              "private": {
+                "type": "directory",
+                "name": "private",
+                "permissions": "rwx------",
+                "owner": "admin",
+                "children": {
+                  "contracts": {
+                    "type": "directory",
+                    "name": "contracts",
+                    "permissions": "rwx------",
+                    "owner": "admin",
+                    "children": {
+                      "classified.txt": {
+                        "type": "file",
+                        "name": "classified.txt",
+                        "permissions": "rw-------",
+                        "owner": "admin",
+                        "content": "PROJECT NIGHTFALL - CLASSIFIED\n\nClient: REDACTED\nContract Value: $50,000,000\nPurpose: Mass surveillance infrastructure\nData Collection: Citizen communications, locations, financial records\nStorage Location: /srv/cybercorp/private/data/surveillance_db\n\nSTATUS: ACTIVE\nNext Payment: 2024-11-01\n\nWARNING: This information is highly classified."
+                      }
+                    }
+                  },
+                  "data": {
+                    "type": "directory",
+                    "name": "data",
+                    "permissions": "rwx------",
+                    "owner": "admin",
+                    "children": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "etc": {
+        "type": "directory",
+        "name": "etc",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "passwd": {
+            "type": "file",
+            "name": "passwd",
+            "permissions": "rw-r--r--",
+            "owner": "root",
+            "content": "root:x:0:0:root:/root:/bin/bash\nhacker:x:1000:1000:Hacker:/home/hacker:/bin/bash\nadmin:x:1001:1001:Admin:/home/admin:/bin/bash"
+          },
+          "hosts": {
+            "type": "file",
+            "name": "hosts",
+            "permissions": "rw-r--r--",
+            "owner": "root",
+            "content": "127.0.0.1\tlocalhost\n192.168.1.100\tmainframe.cybercorp.internal\n192.168.1.200\tbackup.cybercorp.internal"
+          }
+        }
+      }
+    }
+  },
+  "missions": [
+    {
+      "id": "mission_1",
+      "title": "Mission 1: Getting Your Bearings",
+      "story": "You've successfully connected to the CyberCorp mainframe. You're in deep now. First, you need to understand where you are and what tools you have access to. Time to master basic navigation.",
+      "tasks": [
+        {
+          "id": "task_1_1",
+          "description": "Use 'pwd' to find out your current location in the system",
+          "command": "pwd",
+          "hints": [
+            { "level": 1, "text": "Try the command that shows your present working directory" },
+            { "level": 2, "text": "The command is 'pwd' (print working directory)" },
+            { "level": 3, "text": "Type: pwd" }
+          ]
+        },
+        {
+          "id": "task_1_2",
+          "description": "List the files in your current directory using 'ls'",
+          "command": "ls",
+          "hints": [
+            { "level": 1, "text": "You need to list the contents of the current directory" },
+            { "level": 2, "text": "Use 'ls' to list files" },
+            { "level": 3, "text": "Type: ls" }
+          ]
+        },
+        {
+          "id": "task_1_3",
+          "description": "Read the welcome.txt file using 'cat'",
+          "command": "cat welcome.txt",
+          "hints": [
+            { "level": 1, "text": "You need to display the contents of welcome.txt" },
+            { "level": 2, "text": "Use 'cat' followed by the filename" },
+            { "level": 3, "text": "Type: cat welcome.txt" }
+          ]
+        },
+        {
+          "id": "task_1_4",
+          "description": "Navigate to the parent directory using 'cd ..'",
+          "command": "cd ..",
+          "hints": [
+            { "level": 1, "text": "Move up one directory level" },
+            { "level": 2, "text": "Use 'cd ..' where '..' means parent directory" },
+            { "level": 3, "text": "Type: cd .." }
+          ]
+        }
+      ],
+      "onComplete": "Good work. You've got the basics down. Now let's dig deeper into CyberCorp's systems."
+    },
+    {
+      "id": "mission_2",
+      "title": "Mission 2: Reconnaissance",
+      "story": "Now that you can navigate, it's time to scout the system. CyberCorp has files scattered across multiple directories. Your contact 'Ghost' mentioned something about suspicious activity. Time to investigate.",
+      "tasks": [
+        {
+          "id": "task_2_1",
+          "description": "Navigate to the root directory using 'cd /'",
+          "command": "cd /",
+          "hints": [
+            { "level": 1, "text": "Go to the very top of the filesystem" },
+            { "level": 2, "text": "Use 'cd /' where '/' is the root" },
+            { "level": 3, "text": "Type: cd /" }
+          ]
+        },
+        {
+          "id": "task_2_2",
+          "description": "List all directories in root with details using 'ls -l'",
+          "command": "ls -l",
+          "hints": [
+            { "level": 1, "text": "List files with more information using a flag" },
+            { "level": 2, "text": "Add '-l' flag to ls for long format" },
+            { "level": 3, "text": "Type: ls -l" }
+          ]
+        },
+        {
+          "id": "task_2_3",
+          "description": "Navigate to /var/log and check system.log for clues",
+          "commandPattern": "^cd\\s+/var/log.*",
+          "hints": [
+            { "level": 1, "text": "System logs are usually in /var/log" },
+            { "level": 2, "text": "Use 'cd /var/log' to go there" },
+            { "level": 3, "text": "Type: cd /var/log" }
+          ]
+        },
+        {
+          "id": "task_2_4",
+          "description": "Read the system.log file",
+          "command": "cat system.log",
+          "hints": [
+            { "level": 1, "text": "Display the log file contents" },
+            { "level": 2, "text": "Use cat on system.log" },
+            { "level": 3, "text": "Type: cat system.log" }
+          ]
+        },
+        {
+          "id": "task_2_5",
+          "description": "Search for 'Security' in system.log using grep",
+          "commandPattern": "grep.*[Ss]ecurity.*system\\.log",
+          "hints": [
+            { "level": 1, "text": "Use grep to search for patterns in files" },
+            { "level": 2, "text": "Syntax: grep 'pattern' filename" },
+            { "level": 3, "text": "Type: grep Security system.log" }
+          ]
+        }
+      ],
+      "onComplete": "Interesting... there are security scans running. Something big is going on. Let's keep digging."
+    },
+    {
+      "id": "mission_3",
+      "title": "Mission 3: Finding the Evidence",
+      "story": "The logs show regular security scans, but that's just the surface. Ghost suspects CyberCorp is hiding something in their private directories. Time to find that evidence.",
+      "tasks": [
+        {
+          "id": "task_3_1",
+          "description": "Navigate to /srv/cybercorp",
+          "commandPattern": "^cd\\s+/srv/cybercorp.*",
+          "hints": [
+            { "level": 1, "text": "Server files are usually in /srv" },
+            { "level": 2, "text": "Navigate to /srv/cybercorp" },
+            { "level": 3, "text": "Type: cd /srv/cybercorp" }
+          ]
+        },
+        {
+          "id": "task_3_2",
+          "description": "List the directories here",
+          "command": "ls",
+          "hints": [
+            { "level": 1, "text": "See what's in this directory" },
+            { "level": 2, "text": "Use ls" },
+            { "level": 3, "text": "Type: ls" }
+          ]
+        },
+        {
+          "id": "task_3_3",
+          "description": "Navigate to the private directory",
+          "command": "cd private",
+          "hints": [
+            { "level": 1, "text": "Go into the private folder" },
+            { "level": 2, "text": "Use cd private" },
+            { "level": 3, "text": "Type: cd private" }
+          ]
+        },
+        {
+          "id": "task_3_4",
+          "description": "Find all .txt files using 'find . -name \"*.txt\"'",
+          "commandPattern": "find.*-name.*\\.txt",
+          "hints": [
+            { "level": 1, "text": "Use find command to search for files by name pattern" },
+            { "level": 2, "text": "Syntax: find <directory> -name <pattern>" },
+            { "level": 3, "text": "Type: find . -name \"*.txt\"" }
+          ]
+        },
+        {
+          "id": "task_3_5",
+          "description": "Read the classified.txt file in the contracts folder",
+          "commandPattern": "cat.*(contracts/classified\\.txt|classified\\.txt)",
+          "hints": [
+            { "level": 1, "text": "Navigate to contracts and read the file, or use the full path" },
+            { "level": 2, "text": "You can use: cat contracts/classified.txt" },
+            { "level": 3, "text": "Type: cat contracts/classified.txt" }
+          ]
+        }
+      ],
+      "onComplete": "Jackpot! You found evidence of PROJECT NIGHTFALL - illegal mass surveillance. But we need to secure this evidence before they detect us."
+    },
+    {
+      "id": "mission_4",
+      "title": "Mission 4: Securing the Evidence",
+      "story": "You've found the smoking gun, but it's not enough to just read it. You need to copy this evidence to your secure location and create a backup. Time to master file operations.",
+      "tasks": [
+        {
+          "id": "task_4_1",
+          "description": "Create a directory called 'evidence' in your home folder",
+          "commandPattern": "mkdir.*/home/hacker/evidence",
+          "hints": [
+            { "level": 1, "text": "Use mkdir to create a new directory" },
+            { "level": 2, "text": "Specify the full path: /home/hacker/evidence" },
+            { "level": 3, "text": "Type: mkdir /home/hacker/evidence" }
+          ]
+        },
+        {
+          "id": "task_4_2",
+          "description": "Copy classified.txt to your evidence folder",
+          "commandPattern": "cp.*classified\\.txt.*/home/hacker/evidence",
+          "hints": [
+            { "level": 1, "text": "Use cp to copy files from source to destination" },
+            { "level": 2, "text": "Syntax: cp <source> <destination>" },
+            { "level": 3, "text": "Type: cp contracts/classified.txt /home/hacker/evidence/" }
+          ]
+        },
+        {
+          "id": "task_4_3",
+          "description": "Navigate to your evidence folder",
+          "commandPattern": "cd.*/home/hacker/evidence",
+          "hints": [
+            { "level": 1, "text": "Go to the evidence directory you created" },
+            { "level": 2, "text": "Use cd with the full path" },
+            { "level": 3, "text": "Type: cd /home/hacker/evidence" }
+          ]
+        },
+        {
+          "id": "task_4_4",
+          "description": "Create a summary file using 'touch summary.txt'",
+          "command": "touch summary.txt",
+          "hints": [
+            { "level": 1, "text": "Create an empty file" },
+            { "level": 2, "text": "Use touch command" },
+            { "level": 3, "text": "Type: touch summary.txt" }
+          ]
+        },
+        {
+          "id": "task_4_5",
+          "description": "Add a note to summary.txt using echo",
+          "commandPattern": "echo.*>.*summary\\.txt",
+          "hints": [
+            { "level": 1, "text": "Use echo with output redirection to write to a file" },
+            { "level": 2, "text": "Syntax: echo \"your text\" > filename" },
+            { "level": 3, "text": "Type: echo \"Evidence secured\" > summary.txt" }
+          ]
+        }
+      ],
+      "onComplete": "Evidence secured! But CyberCorp's security systems are active. Time to check the network and prepare for extraction."
+    },
+    {
+      "id": "mission_5",
+      "title": "Mission 5: Network Reconnaissance",
+      "story": "Before we extract this data, we need to understand the network topology. Who's watching? What connections are active? Time to use network commands.",
+      "tasks": [
+        {
+          "id": "task_5_1",
+          "description": "Check your network configuration with 'ifconfig'",
+          "command": "ifconfig",
+          "hints": [
+            { "level": 1, "text": "View network interface configuration" },
+            { "level": 2, "text": "Use ifconfig command" },
+            { "level": 3, "text": "Type: ifconfig" }
+          ]
+        },
+        {
+          "id": "task_5_2",
+          "description": "Check active network connections with 'netstat -tuln'",
+          "commandPattern": "netstat.*-.*t.*u.*l.*n",
+          "hints": [
+            { "level": 1, "text": "List all TCP and UDP listening ports" },
+            { "level": 2, "text": "Use netstat with -tuln flags" },
+            { "level": 3, "text": "Type: netstat -tuln" }
+          ]
+        },
+        {
+          "id": "task_5_3",
+          "description": "Ping the backup server at backup.cybercorp.internal",
+          "commandPattern": "ping.*backup",
+          "hints": [
+            { "level": 1, "text": "Test connectivity to a host" },
+            { "level": 2, "text": "Use: ping <hostname>" },
+            { "level": 3, "text": "Type: ping backup.cybercorp.internal" }
+          ]
+        },
+        {
+          "id": "task_5_4",
+          "description": "Check the /etc/hosts file to see the network map",
+          "command": "cat /etc/hosts",
+          "hints": [
+            { "level": 1, "text": "The hosts file maps IP addresses to hostnames" },
+            { "level": 2, "text": "It's located at /etc/hosts" },
+            { "level": 3, "text": "Type: cat /etc/hosts" }
+          ]
+        }
+      ],
+      "onComplete": "Good work! You've mapped the network. Now we know the extraction route. Time for the final phase."
+    },
+    {
+      "id": "mission_6",
+      "title": "Mission 6: The Extraction",
+      "story": "This is it. The evidence is ready, the network is mapped. Time to simulate a secure extraction and complete your mission. Ghost is waiting on the other side.",
+      "tasks": [
+        {
+          "id": "task_6_1",
+          "description": "View your environment variables with 'env'",
+          "command": "env",
+          "hints": [
+            { "level": 1, "text": "Check system environment variables" },
+            { "level": 2, "text": "Use the env command" },
+            { "level": 3, "text": "Type: env" }
+          ]
+        },
+        {
+          "id": "task_6_2",
+          "description": "Use 'sudo' to read the system passwd file",
+          "command": "sudo cat /etc/passwd",
+          "hints": [
+            { "level": 1, "text": "Execute a command with elevated privileges" },
+            { "level": 2, "text": "Prefix your command with sudo" },
+            { "level": 3, "text": "Type: sudo cat /etc/passwd" }
+          ]
+        },
+        {
+          "id": "task_6_3",
+          "description": "Simulate secure copy to Ghost's server using 'scp'",
+          "commandPattern": "scp.*/home/hacker/evidence.*ghost@",
+          "hints": [
+            { "level": 1, "text": "Securely copy files over SSH" },
+            { "level": 2, "text": "Syntax: scp <source> user@host:<destination>" },
+            { "level": 3, "text": "Type: scp /home/hacker/evidence/classified.txt ghost@secure.server:/incoming/" }
+          ]
+        },
+        {
+          "id": "task_6_4",
+          "description": "Clear your tracks with 'history' to view your commands, then prepare to disconnect",
+          "command": "history",
+          "hints": [
+            { "level": 1, "text": "View your command history" },
+            { "level": 2, "text": "Use history command" },
+            { "level": 3, "text": "Type: history" }
+          ]
+        }
+      ],
+      "onComplete": "Mission complete! You've successfully infiltrated CyberCorp, found evidence of their illegal surveillance program, and extracted it safely. The evidence is now in the hands of the resistance. PROJECT NIGHTFALL will be exposed, and justice will be served. Excellent work, hacker. Ghost out."
+    }
+  ]
+}

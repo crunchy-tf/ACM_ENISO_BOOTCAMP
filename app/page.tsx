@@ -22,6 +22,13 @@ import {
   CheckCircle2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import dynamic from "next/dynamic"
+
+// Dynamically import the terminal exercise to avoid SSR issues
+const TerminalExercise = dynamic(
+  () => import("@/components/terminal/TerminalExercise").then((mod) => ({ default: mod.TerminalExercise })),
+  { ssr: false }
+)
 
 export default function PresentationPage() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -91,6 +98,7 @@ export default function PresentationPage() {
       component: <QuestionSlide question="What is the difference between absolute vs relative paths?" icon={Code2} />,
     },
     { id: "answer-paths", component: <PathsAnswerSlide /> },
+    { id: "terminal-exercise", component: <TerminalExercise /> },
   ]
 
   useEffect(() => {

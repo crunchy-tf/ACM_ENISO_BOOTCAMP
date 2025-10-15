@@ -1,0 +1,1 @@
+export { TerminalExercise } from "./TerminalExercise"
