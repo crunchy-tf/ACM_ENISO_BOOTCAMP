@@ -38,6 +38,16 @@ round-trip min/avg/max/stddev = 11.8/12.5/13.2/0.6 ms`,
 3 packets transmitted, 3 packets received, 0.0% packet loss
 round-trip min/avg/max/stddev = 0.043/0.053/0.062/0.000 ms`,
 
+  "ping agency.local": `PING agency.local (192.168.1.100): 56 data bytes
+64 bytes from 192.168.1.100: icmp_seq=0 ttl=64 time=1.2 ms
+64 bytes from 192.168.1.100: icmp_seq=1 ttl=64 time=1.4 ms
+64 bytes from 192.168.1.100: icmp_seq=2 ttl=64 time=1.1 ms
+64 bytes from 192.168.1.100: icmp_seq=3 ttl=64 time=1.3 ms
+
+--- agency.local ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 1.1/1.25/1.4/0.1 ms`,
+
   "ifconfig": `eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 192.168.1.100  netmask 255.255.255.0  broadcast 192.168.1.255
         inet6 fe80::a00:27ff:fe4e:66a1  prefixlen 64  scopeid 0x20<link>
@@ -65,6 +75,44 @@ tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
 tcp        0      0 127.0.0.1:3000          0.0.0.0:*               LISTEN
 tcp6       0      0 :::80                   :::*                    LISTEN
 tcp6       0      0 :::22                   :::*                    LISTEN`,
+
+  "curl http://agency.local/briefing": `{
+  "status": "ACTIVE",
+  "mission": "PROJECT_ALPHA",
+  "clearance": "TOP_SECRET",
+  "agent": "GHOST",
+  "message": "Evidence collection authorized. Proceed with caution."
+}`,
+
+  "wget http://agency.local/resources/briefing.txt": `--2024-10-15 14:32:01--  http://agency.local/resources/briefing.txt
+Resolving agency.local... 192.168.1.100
+Connecting to agency.local|192.168.1.100|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 256 [text/plain]
+Saving to: 'briefing.txt'
+
+briefing.txt        100%[===================>]     256  --.-KB/s    in 0s
+
+2024-10-15 14:32:01 (12.3 MB/s) - 'briefing.txt' saved [256/256]`,
+
+  "dig omega-corp.com": `; <<>> DiG 9.10.6 <<>> omega-corp.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 54321
+;; ANSWER SECTION:
+omega-corp.com.    3600    IN    A    192.168.50.10
+
+;; Query time: 18 msec
+;; SERVER: 8.8.8.8#53(8.8.8.8)
+;; WHEN: ${new Date().toUTCString()}
+;; MSG SIZE  rcvd: 58`,
+
+  "nslookup omega-corp.com": `Server:		8.8.8.8
+Address:	8.8.8.8#53
+
+Non-authoritative answer:
+Name:	omega-corp.com
+Address: 192.168.50.10`,
 }
 
 /**
@@ -131,12 +179,13 @@ export function executeCommand(
       return handlePing(args)
     case "curl":
     case "wget":
-      return handleCurlWget(cmd, args)
+      return handleCurlWget(cmd, args, state, onStateChange)
     case "netstat":
       return handleNetstat(args)
     case "dig":
-    case "nslookup":
       return handleDig(args)
+    case "nslookup":
+      return handleNslookup(args)
     case "ifconfig":
       return handleIfconfig()
     case "ip":
@@ -144,7 +193,7 @@ export function executeCommand(
     case "ssh":
       return handleSsh(args)
     case "scp":
-      return handleScp(args)
+      return handleScp(args, state, onStateChange)
     case "nano":
     case "vi":
     case "vim":
@@ -208,8 +257,13 @@ function handleSudo(args: string[], state: TerminalState, onStateChange: (newSta
 }
 
 function handleCd(args: string[], state: TerminalState, onStateChange: (newState: Partial<TerminalState>) => void): CommandResult {
-  const targetPath = args[0] || "/home/user"
-  const newPath = resolvePath(state.currentPath, targetPath)
+  // Default to HOME if no argument provided
+  const targetPath = args[0] || state.environment.HOME || "~"
+  
+  // Handle ~ as home directory
+  const resolvedTarget = targetPath === "~" ? state.environment.HOME : targetPath
+  
+  const newPath = resolvePath(state.currentPath, resolvedTarget)
   const node = getNode(state.fileSystem, newPath)
 
   if (!node) {
@@ -285,19 +339,31 @@ function handleCat(args: string[], state: TerminalState): CommandResult {
   }
 
   const results: string[] = []
+  const errors: string[] = []
 
   for (const arg of args) {
     const path = resolvePath(state.currentPath, arg)
     const content = readFile(state.fileSystem, path)
 
     if (content === null) {
-      results.push(`cat: ${arg}: No such file or directory`)
+      errors.push(`cat: ${arg}: No such file or directory`)
     } else {
       results.push(content)
     }
   }
 
-  return { output: results.join("\n") }
+  // If there were only errors and no successful reads, return as error
+  if (results.length === 0 && errors.length > 0) {
+    return { output: "", error: errors.join("\n") }
+  }
+  
+  // If there were some successes, include any errors in the output
+  const output = results.join("\n")
+  if (errors.length > 0) {
+    return { output, error: errors.join("\n") }
+  }
+  
+  return { output }
 }
 
 function handleGrep(args: string[], state: TerminalState): CommandResult {
@@ -305,18 +371,80 @@ function handleGrep(args: string[], state: TerminalState): CommandResult {
     return { output: "", error: "grep: missing pattern or file" }
   }
 
-  const pattern = args[0]
-  const filePath = resolvePath(state.currentPath, args[1])
-  const content = readFile(state.fileSystem, filePath)
+  let showLineNumbers = false
+  let pattern = ""
+  let fileArgs: string[] = []
+  
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "-n") {
+      showLineNumbers = true
+    } else if (args[i] === "-r" || args[i] === "-R") {
+      // Recursive flag (we'll handle it simply)
+    } else if (!pattern) {
+      pattern = args[i]
+    } else {
+      fileArgs.push(args[i])
+    }
+  }
+  
+  if (!pattern) {
+    return { output: "", error: "grep: missing pattern" }
+  }
+  
+  if (fileArgs.length === 0) {
+    return { output: "", error: "grep: missing file operand" }
+  }
+  
+  const results: string[] = []
+  
+  // Handle wildcard (*)
+  if (fileArgs[0] === "*") {
+    const dirPath = state.currentPath
+    const files = listDirectory(state.fileSystem, dirPath)
+    
+    for (const fileName of files) {
+      const filePath = dirPath === "/" ? `/${fileName}` : `${dirPath}/${fileName}`
+      const node = getNode(state.fileSystem, filePath)
+      
+      if (node && node.type === "file") {
+        const content = readFile(state.fileSystem, filePath)
+        if (content) {
+          const lines = content.split("\n")
+          lines.forEach((line, index) => {
+            if (line.includes(pattern)) {
+              if (showLineNumbers) {
+                results.push(`${fileName}:${index + 1}:${line}`)
+              } else {
+                results.push(`${fileName}:${line}`)
+              }
+            }
+          })
+        }
+      }
+    }
+  } else {
+    // Single file
+    const filePath = resolvePath(state.currentPath, fileArgs[0])
+    const content = readFile(state.fileSystem, filePath)
 
-  if (content === null) {
-    return { output: "", error: `grep: ${args[1]}: No such file or directory` }
+    if (content === null) {
+      return { output: "", error: `grep: ${fileArgs[0]}: No such file or directory` }
+    }
+
+    const lines = content.split("\n")
+    lines.forEach((line, index) => {
+      if (line.includes(pattern)) {
+        if (showLineNumbers) {
+          results.push(`${index + 1}:${line}`)
+        } else {
+          results.push(line)
+        }
+      }
+    })
   }
 
-  const lines = content.split("\n")
-  const matches = lines.filter((line) => line.includes(pattern))
-
-  return { output: matches.join("\n") }
+  return { output: results.join("\n") }
 }
 
 function handleFind(args: string[], state: TerminalState): CommandResult {
@@ -546,24 +674,82 @@ function handleEnv(state: TerminalState): CommandResult {
 
 function handlePing(args: string[]): CommandResult {
   const target = args[0] || "localhost"
-  const key = `ping ${target}`
-  const response = networkMocks[key] || networkMocks["ping localhost"]
+  // Check for count flag
+  const countIndex = args.indexOf("-c")
+  const count = countIndex !== -1 && args[countIndex + 1] ? parseInt(args[countIndex + 1]) : 3
+  
+  // Remove -c flag and count from target if present
+  const cleanTarget = args.filter((arg, idx) => arg !== "-c" && (idx === 0 || args[idx - 1] !== "-c"))[0] || "localhost"
+  
+  const key = `ping ${cleanTarget}`
+  let response = networkMocks[key]
+  
+  if (!response) {
+    // Generate generic ping response for unknown hosts
+    response = `PING ${cleanTarget} (192.168.1.1): 56 data bytes
+64 bytes from 192.168.1.1: icmp_seq=0 ttl=64 time=1.2 ms
+64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=1.4 ms
+64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1.1 ms
+
+--- ${cleanTarget} ping statistics ---
+${count} packets transmitted, ${count} packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 1.1/1.23/1.4/0.1 ms`
+  }
+  
   return { output: response }
 }
 
-function handleCurlWget(cmd: string, args: string[]): CommandResult {
+function handleCurlWget(cmd: string, args: string[], state: TerminalState, onStateChange: (newState: Partial<TerminalState>) => void): CommandResult {
   const url = args[args.length - 1] || "example.com"
+  
+  // Check for specific URLs
+  const key = cmd === "curl" ? url : url
+  const mockResponse = networkMocks[key]
+  
+  if (mockResponse) {
+    // For wget, also create the file
+    if (cmd === "wget") {
+      const fileName = url.split("/").pop() || "index.html"
+      const filePath = resolvePath(state.currentPath, fileName)
+      writeFile(state.fileSystem, filePath, "Mock briefing content\nOperation: Ghost\nStatus: Active\n")
+      onStateChange({ fileSystem: { ...state.fileSystem } })
+    }
+    return { output: mockResponse, modifiesState: cmd === "wget" }
+  }
+  
+  // For wget, simulate file download
+  if (cmd === "wget") {
+    const fileName = url.split("/").pop() || "index.html"
+    const filePath = resolvePath(state.currentPath, fileName)
+    const content = `Mock content downloaded from ${url}`
+    writeFile(state.fileSystem, filePath, content)
+    onStateChange({ fileSystem: { ...state.fileSystem } })
+    
+    return {
+      output: `--${new Date().toISOString().split("T")[0]} ${new Date().toTimeString().split(" ")[0]}--  ${url}
+Resolving ${url.split("/")[2] || url}... 192.168.1.100
+Connecting to ${url.split("/")[2] || url}|192.168.1.100|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: ${content.length} [text/html]
+Saving to: '${fileName}'
+
+${fileName}        100%[===================>]   ${(content.length / 1024).toFixed(2)}K  --.-KB/s    in 0s
+
+${new Date().toISOString().split("T")[0]} ${new Date().toTimeString().split(" ")[0]} (5.2 MB/s) - '${fileName}' saved [${content.length}/${content.length}]`,
+      modifiesState: true
+    }
+  }
+  
+  // Generic curl response
   return {
-    output: `${cmd}: Simulated download from ${url}
-Connected to ${url}
-HTTP/1.1 200 OK
+    output: `HTTP/1.1 200 OK
 Content-Type: text/html
 Content-Length: 1234
 
 <!DOCTYPE html>
 <html>
-<head><title>Mock Response</title></head>
-<body><h1>This is a simulated response</h1></body>
+<head><title>Mock Response from ${url}</title></head>
+<body><h1>This is a simulated response from ${url}</h1></body>
 </html>`,
   }
 }
@@ -573,7 +759,20 @@ function handleNetstat(args: string[]): CommandResult {
 }
 
 function handleDig(args: string[]): CommandResult {
-  const domain = args[0] || "example.com"
+  const domain = args.filter(arg => !arg.startsWith("+"))[0] || "example.com"
+  const isShort = args.includes("+short")
+  
+  const key = `dig ${domain}`
+  const mockResponse = networkMocks[key]
+  
+  if (mockResponse) {
+    return { output: mockResponse }
+  }
+  
+  if (isShort) {
+    return { output: "93.184.216.34" }
+  }
+  
   return {
     output: `; <<>> DiG 9.10.6 <<>> ${domain}
 ;; global options: +cmd
@@ -586,6 +785,26 @@ ${domain}.    3600    IN    A    93.184.216.34
 ;; SERVER: 8.8.8.8#53(8.8.8.8)
 ;; WHEN: ${new Date().toUTCString()}
 ;; MSG SIZE  rcvd: 56`,
+  }
+}
+
+function handleNslookup(args: string[]): CommandResult {
+  const domain = args[0] || "example.com"
+  
+  const key = `nslookup ${domain}`
+  const mockResponse = networkMocks[key]
+  
+  if (mockResponse) {
+    return { output: mockResponse }
+  }
+  
+  return {
+    output: `Server:		8.8.8.8
+Address:	8.8.8.8#53
+
+Non-authoritative answer:
+Name:	${domain}
+Address: 93.184.216.34`,
   }
 }
 
@@ -602,24 +821,88 @@ function handleIp(args: string[]): CommandResult {
 
 function handleSsh(args: string[]): CommandResult {
   const target = args[0] || "user@host"
+  
+  // Special handling for omega_agent connection
+  if (target.includes("omega_agent") || target.includes("remote-server")) {
+    return {
+      output: `Connecting to ${target}...
+The authenticity of host 'remote-server (10.0.0.50)' can't be established.
+ECDSA key fingerprint is SHA256:xYz123AbC456DeF789...
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'remote-server' (ECDSA) to the list of known hosts.
+omega_agent@remote-server's password: ********
+
+Welcome to Orion Field Server
+Last login: ${new Date().toUTCString()}
+
+\x1b[1;32momega_agent@remote-server:~$\x1b[0m Connection established.
+[This is a simulated SSH session. You can now transfer files via scp]
+[Type 'exit' or use Ctrl+D to close connection]`,
+    }
+  }
+  
   return {
-    output: `ssh: Simulated SSH connection to ${target}
-Connection established (mock)
+    output: `ssh: Connecting to ${target}...
+Connection established (simulated)
 Welcome to the remote system!
-[This is a simulated connection - no actual SSH session]`,
+[This is a simulated connection - use for training purposes]`,
   }
 }
 
-function handleScp(args: string[]): CommandResult {
+function handleScp(args: string[], state: TerminalState, onStateChange: (newState: Partial<TerminalState>) => void): CommandResult {
   if (args.length < 2) {
-    return { output: "", error: "scp: missing file operand" }
+    return { output: "", error: "scp: missing file operand\nusage: scp source destination" }
   }
-  return {
-    output: `scp: Simulated secure copy
-Copying ${args[0]} to ${args[1]}...
-${args[0]}    100%  1234    1.2KB/s   00:01
-Transfer complete (mock)`,
+  
+  const source = args[0]
+  const destination = args[1]
+  
+  // Check if this is a remote transfer (contains @)
+  const isRemote = destination.includes("@") || source.includes("@")
+  
+  if (isRemote) {
+    // Parse remote destination
+    let remotePath = ""
+    let remoteHost = ""
+    let localFile = ""
+    
+    if (destination.includes("@")) {
+      // Local to remote
+      localFile = source
+      const parts = destination.split(":")
+      remoteHost = parts[0]
+      remotePath = parts[1] || "/home/omega/incoming/"
+    }
+    
+    // Verify local file exists
+    const fullPath = resolvePath(state.currentPath, localFile)
+    const fileNode = getNode(state.fileSystem, fullPath)
+    
+    if (!fileNode || fileNode.type !== "file") {
+      return { output: "", error: `scp: ${localFile}: No such file or directory` }
+    }
+    
+    // Simulate transfer
+    const fileName = getBasename(fullPath)
+    return {
+      output: `${localFile}                                    100%  ${(fileNode.content?.length || 0).toString().padStart(4)}    ${(Math.random() * 10 + 1).toFixed(1)}KB/s   00:0${Math.floor(Math.random() * 9 + 1)}
+Transfer complete: ${fileName} -> ${remoteHost}:${remotePath}
+[File successfully transferred to remote agent]`,
+      modifiesState: true
+    }
   }
+  
+  // Local copy
+  const sourcePath = resolvePath(state.currentPath, source)
+  const destPath = resolvePath(state.currentPath, destination)
+  const success = copyNode(state.fileSystem, sourcePath, destPath)
+  
+  if (!success) {
+    return { output: "", error: `scp: cannot copy '${source}' to '${destination}'` }
+  }
+  
+  onStateChange({ fileSystem: { ...state.fileSystem } })
+  return { output: `${source} copied to ${destination}`, modifiesState: true }
 }
 
 function handleEditor(cmd: string, args: string[]): CommandResult {

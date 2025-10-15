@@ -14,13 +14,17 @@ export function resolvePath(currentPath: string, targetPath: string): string {
 
   targetPath.split("/").forEach((part) => {
     if (part === "..") {
-      parts.pop()
+      // Only pop if we're not at root
+      if (parts.length > 0) {
+        parts.pop()
+      }
     } else if (part !== "." && part !== "") {
       parts.push(part)
     }
   })
 
-  return "/" + parts.join("/")
+  // Return root if no parts, otherwise return the joined path
+  return parts.length === 0 ? "/" : "/" + parts.join("/")
 }
 
 /**
@@ -28,37 +32,28 @@ export function resolvePath(currentPath: string, targetPath: string): string {
  */
 export function normalizePath(path: string): string {
   const parts = path.split("/").filter(Boolean)
-  return "/" + parts.join("/")
+  return parts.length === 0 ? "/" : "/" + parts.join("/")
 }
 
 /**
  * Get a node at a specific path
  */
-export function getNode(fs: FileSystem, path: string): FileNode | null {
-  const normalizedPath = normalizePath(path)
-  if (normalizedPath === "/") {
-    return {
-      type: "directory",
-      name: "/",
-      children: fs.root,
+export function getNode(fs: any, path: string): FileNode | null {
+  try {
+    const stat = fs.stat(path)
+    const content =
+      fs.isFile(stat.mode) ? fs.readFile(path, { encoding: "utf8" }) : undefined
+    const node: FileNode = {
+      type: fs.isDir(stat.mode) ? "directory" : "file",
+      name: getBasename(path),
+      content: content,
+      permissions: stat.mode.toString(8).slice(-3), // Extract permission bits
+      owner: stat.owner || "student", // Include owner information
     }
+    return node
+  } catch (e) {
+    return null
   }
-
-  const parts = normalizedPath.split("/").filter(Boolean)
-  let current: FileNode | null = {
-    type: "directory",
-    name: "/",
-    children: fs.root,
-  }
-
-  for (const part of parts) {
-    if (!current || current.type !== "directory" || !current.children) {
-      return null
-    }
-    current = current.children[part] || null
-  }
-
-  return current
 }
 
 /**
@@ -67,7 +62,7 @@ export function getNode(fs: FileSystem, path: string): FileNode | null {
 export function getParentPath(path: string): string {
   const parts = path.split("/").filter(Boolean)
   parts.pop()
-  return "/" + parts.join("/")
+  return parts.length === 0 ? "/" : "/" + parts.join("/")
 }
 
 /**

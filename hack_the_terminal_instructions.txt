@@ -1,0 +1,531 @@
+Hack the Mainframe — Full Questline
+
+Theme: Cyberpunk infiltration / white-hat mission
+Player role: Orion field operative (white-hat)
+High-level goal: Locate Project Alpha, record evidence to exfil_log.txt, transfer it to agent omega_agent, and clean up traces.
+Teaching order enforced across the flow:
+sudо → cd → ls → pwd → cat → grep → find → mkdir → rmdir → rm → cp → mv → touch → less → head → tail → ping → curl → wget → netstat → dig → nslookup → ifconfig → ip addr → ssh → scp → echo → env → IO Redirection (>, >>, <, <<) → nano
+
+Prelude — Sandbox Briefing (no graded task)
+
+Story: You’ve been booted into the Orion sandbox. Agent Kira’s voice: “This is a simulated mainframe. Follow the missions. Do not run destructive commands without confirmation.”
+UI Behavior: Show theme intro text, choice to start Hack the Mainframe, load hack_mainframe.json fixture.
+
+ACT I — Entry & Privilege
+Mission 1 — Briefing & Orientation
+
+Story: “Welcome, operative. Read the briefing and prepare a workspace.”
+
+Tasks
+
+Read the briefing file.
+
+Success: cat /home/student/README.md executed or file opened.
+
+Commands taught: cat (but pwd/ls introduced inline)
+
+Hints:
+
+Use a command that prints file contents.
+
+Syntax: cat <path>
+
+Example: cat /home/student/README.md
+
+Create workspace if missing.
+
+Success: /home/student/temp_exfil exists.
+
+Commands taught: mkdir, ls
+
+Hints:
+
+Make a directory for collected files.
+
+Syntax: mkdir /home/student/temp_exfil
+
+Example: mkdir -p /home/student/temp_exfil
+
+Mission 2 — Privilege Check (teach sudo)
+
+Story: “Some system files are locked. You must escalate to view them.”
+
+Tasks
+
+Attempt to list /etc (see permission denial), then use sudo.
+
+Success: ls /etc shows a permission error (simulated), then sudo ls /etc lists files.
+
+Commands taught: sudo, ls (review)
+
+Hints:
+
+Try ls /etc first to observe permission issues.
+
+Prefix command with sudo to run as root.
+
+Example: sudo ls /etc
+
+Read /etc/secure.conf with sudo.
+
+Success: sudo cat /etc/secure.conf prints the file with the clearance code.
+
+Hints:
+
+cat prints file contents.
+
+Combine with sudo to bypass permission.
+
+Example: sudo cat /etc/secure.conf
+
+ACT II — Navigate & Inspect
+Mission 3 — Where Am I? (teach pwd, cd, ls)
+
+Story: “Locate your starting folder and get to the projects area.”
+
+Tasks
+
+Print current directory.
+
+Success: pwd outputs /home/student (or configured home).
+
+Commands taught: pwd
+
+Hints: pwd prints the working directory.
+
+List files in home and identify projects.
+
+Success: ls shows projects and temp_exfil.
+
+Commands taught: ls
+
+Hints:
+
+ls lists entries in the current dir.
+
+ls -la shows hidden files and permissions.
+
+Change directory into projects.
+
+Success: cd projects then pwd shows /home/student/projects.
+
+Commands taught: cd
+
+Hints:
+
+cd changes directories.
+
+Syntax: cd <path>; cd .. up; cd ~ home.
+
+Mission 4 — Open Files (teach cat)
+
+Story: “Search the project folder for anything suspicious.”
+
+Tasks
+
+View project_alpha.txt.
+
+Success: cat project_alpha.txt shows PROJECT_ALPHA_SECRET=... and omega-corp.com.
+
+Commands taught: cat
+
+Hints: cat project_alpha.txt
+
+Inspect network_log.txt.
+
+Success: cat network_log.txt shows dated logs and IPs.
+
+Hints: head/tail available later for big logs.
+
+Mission 5 — Search Inside Files (teach grep)
+
+Story: “Find the secret key and domain references quickly.”
+
+Tasks
+
+Search for SECRET_KEY.
+
+Success: grep -n "SECRET_KEY" * returns file and line.
+
+Commands taught: grep
+
+Hints:
+
+grep finds patterns in files.
+
+Syntax: grep -n "pattern" files
+
+Example: grep -n "SECRET_KEY" /home/student/projects/*
+
+Search for omega-corp.com.
+
+Success: grep returns the matching line in project_alpha.txt.
+
+Hints: similar to above.
+
+Mission 6 — Scan Filesystem (teach find)
+
+Story: “The file might be elsewhere; run a system-wide scan.”
+
+Tasks
+
+Find project_alpha.txt.
+
+Success: find / -name "project_alpha.txt" returns /projects/project_alpha.txt.
+
+Commands taught: find
+
+Hints:
+
+Use find path -name "pattern".
+
+Example: find / -name "project_alpha.txt"
+
+Find .log files older than a week in /logs.
+
+Success: find /logs -name "*.log" -mtime +7 returns matches (mtime simulated).
+
+Hints: -mtime filters by simulated timestamps.
+
+ACT III — Staging & Organizing
+Mission 7 — Prepare Exfil Workspace (teach mkdir, rmdir, rm, cp, mv)
+
+Story: “Create a secure staging area, tidy leftovers, and package evidence.”
+
+Tasks
+
+Create /home/student/temp_exfil.
+
+Success: directory exists.
+
+Commands taught: mkdir
+
+Hints: mkdir -p /home/student/temp_exfil
+
+Remove an empty old folder if present.
+
+Success: rmdir /home/student/old_temp removed or error (if not empty).
+
+Commands taught: rmdir
+
+Hints: rmdir only removes empty directories.
+
+Copy project_alpha.txt to temp_exfil.
+
+Success: /home/student/temp_exfil/project_alpha.txt exists.
+
+Commands taught: cp
+
+Hints: cp /projects/project_alpha.txt /home/student/temp_exfil/
+
+Rename network_log.txt to network_analysis.txt.
+
+Success: /projects/network_analysis.txt exists.
+
+Commands taught: mv
+
+Hints: mv /projects/network_log.txt /projects/network_analysis.txt
+
+Delete old_project_beta.txt.
+
+Success: File removed.
+
+Commands taught: rm
+
+Hints: rm /projects/old_project_beta.txt
+
+Mission 8 — Touch & Timestamp (teach touch)
+
+Story: “Create an exfil log file for your notes and timestamps.”
+
+Tasks
+
+Create exfil_log.txt with touch.
+
+Success: File exists in /home/student/temp_exfil.
+
+Commands taught: touch
+
+Hints: touch /home/student/temp_exfil/exfil_log.txt — then ls -l to confirm timestamp.
+
+ACT IV — Analyze & Read
+Mission 9 — Inspect Large Files (teach less, head, tail)
+
+Story: “Long logs are unwieldy — use viewers to inspect relevant bits.”
+
+Tasks
+
+Open network_analysis.txt with less.
+
+Success: less opens an interactive view (UI-level simulation).
+
+Commands taught: less
+
+Hints: less /projects/network_analysis.txt — press q to exit.
+
+Show the first 10 lines of sys.log.
+
+Success: head -n 10 /logs/sys.log prints first 10 lines.
+
+Commands taught: head
+
+Hints: head -n 10 /logs/sys.log
+
+Show the last 20 lines of network_analysis.txt.
+
+Success: tail -n 20 /projects/network_analysis.txt prints last 20 lines.
+
+Commands taught: tail
+
+Hints: tail -n 20 /projects/network_analysis.txt
+
+ACT V — Network Recon
+Mission 10 — Ping & Fetch (teach ping, curl, wget)
+
+Story: “Confirm connectivity to agency nodes and retrieve remote briefing.”
+
+Tasks
+
+Ping agency.local 4 times.
+
+Success: ping -c 4 agency.local shows simulated RTTs and stats.
+
+Commands taught: ping
+
+Hints: ping -c 4 agency.local
+
+Use curl to get the briefing.
+
+Success: curl http://agency.local/briefing returns JSON/text.
+
+Commands taught: curl
+
+Hints: curl http://agency.local/briefing — try curl -I for headers.
+
+Download a resource with wget.
+
+Success: File briefing.txt created in current dir.
+
+Commands taught: wget
+
+Hints: wget http://agency.local/resources/briefing.txt
+
+Mission 11 — Network Introspection (teach netstat, dig, nslookup, ifconfig, ip addr)
+
+Story: “Map open ports and DNS so you know who’s talking to whom.”
+
+Tasks
+
+Show active connections and listening ports.
+
+Success: netstat -tuln lists simulated ports (e.g., 22/ssh, 80/http).
+
+Commands taught: netstat
+
+Hints: netstat -tuln
+
+Resolve omega-corp.com IP.
+
+Success: dig omega-corp.com returns configured IP. nslookup omega-corp.com shows the same.
+
+Commands taught: dig, nslookup
+
+Hints: dig omega-corp.com +short for compact output.
+
+Show network interfaces and addresses.
+
+Success: ifconfig or ip addr prints eth0/lo with simulated addresses.
+
+Commands taught: ifconfig, ip addr
+
+Hints: ip addr show is the modern variant.
+
+ACT VI — Remote Transfer
+Mission 12 — Connect to Agent (teach ssh, scp)
+
+Story: “Contact field agent omega_agent and transfer the evidence.”
+
+Tasks
+
+SSH to remote agent.
+
+Success: ssh omega_agent@remote-server opens a simulated remote shell with prompt omega_agent@remote:~$.
+
+Commands taught: ssh
+
+Hints:
+
+Use ssh user@host.
+
+Authentication via password or key is simulated; the fixture provides the password.
+
+Example: ssh omega_agent@remote-server
+
+From local shell, scp exfil_log.txt to remote.
+
+Success: /remotes/omega_agent/filesystem/home/omega/incoming/exfil_log.txt exists.
+
+Commands taught: scp
+
+Hints:
+
+Syntax: scp /local/path user@host:/remote/path
+
+Example: scp /home/student/temp_exfil/exfil_log.txt omega_agent@remote-server:/home/omega/incoming
+
+ACT VII — Finalize Report & Environment (teach echo, env, redirection)
+Mission 13 — Write the Report (teach echo, env, >, >>, <, <<)
+
+Story: “Log your success and append environment context so HQ knows the conditions.”
+
+Tasks
+
+Overwrite exfil_log.txt with “Mission Success”.
+
+Success: echo "Mission Success" > /home/student/temp_exfil/exfil_log.txt produces a file containing that phrase.
+
+Commands taught: echo, >
+
+Hints: > overwrites; >> appends.
+
+Append environment variables to the log.
+
+Success: env >> /home/student/temp_exfil/exfil_log.txt appends env output.
+
+Commands taught: env, >>
+
+Hints: env prints variables; use >> to append.
+
+Use here-doc to append a multi-line note.
+
+Success: The here-doc content is appended to the file.
+
+Commands taught: here-doc <<
+
+Hints:
+
+Start with cat <<EOF >> file then finish with EOF.
+
+Example:
+
+cat <<EOF >> /home/student/temp_exfil/exfil_log.txt
+Timestamp: 2025-08-02T15:00:00Z
+Field note: Evidence packaged
+EOF
+
+
+Mission 14 — Edit with Nano (teach nano)
+
+Story: “Fine-tune the log file with the editor and add your signature.”
+
+Tasks
+
+Open exfil_log.txt in nano, add one-line signature, save and exit.
+
+Success: File contains signature line.
+
+Commands taught: nano (modal UI simulation)
+
+Hints:
+
+Use nano /path/to/file to edit.
+
+Typical keys: Ctrl+O to write, Ctrl+X to exit (UI should show shortcuts).
+
+ACT VIII — Cleanup & Evasion
+Mission 15 — Clean the Workspace (teach rm, rmdir again safely)
+
+Story: “Remove temporary traces to reduce detection risk.”
+
+Tasks
+
+Remove temporary files and optional temp folder.
+
+Success: /home/student/temp_exfil is empty or removed.
+
+Commands taught: rm, rmdir (review)
+
+Hints:
+
+Use rm file to remove files.
+
+Use rm -r dir for non-empty directories (UI must show confirmation).
+
+Example: rm -r /home/student/temp_exfil (confirm in UI)
+
+Mission 16 — Final Confirmation
+
+Story: “Confirm that the remote server contains the exfil file and that you left no local traces.”
+
+Tasks
+
+SSH into remote and list /home/omega/incoming.
+
+Success: ssh omega_agent@remote-server and ls /home/omega/incoming show exfil_log.txt.
+
+Hints: ssh then ls /home/omega/incoming on the remote shell.
+
+Show that local workspace is cleared.
+
+Success: ls /home/student does not show temp files.
+
+Hints: ls /home/student and ls -la to check hidden files.
+
+Epilogue — Debrief & Rewards
+
+Story text shown to player:
+
+“Agent Kira: Clean job. Project Alpha secured and uploaded to field agent. Orion will analyze the key. You’ve completed the Hack the Mainframe simulation.”
+
+Rewards: show badges: Navigator, Forensic, Exfil Expert, Clean Exit (optional gamification)
+
+Instructor artifacts: Provide download of exfil_log.txt and execution history (local blob download)
+
+Bonus Challenges (optional, higher difficulty)
+
+Detect Defender Leftovers — Use grep -R "ANTIVIRUS" across / to find honeypot traces. Rewards: Forensics badge.
+
+Hint: grep -R "ANTIVIRUS" /
+
+Multi-Target Exfil — Write a small script (simulate via file + here-doc) that scps the log to two remotes; run it in the sandbox.
+
+Hint: Create exfil_script.sh with cat <<'EOF' > exfil_script.sh then chmod +x (simulate) and "run."
+
+Checksum & Integrity — Simulate sha256sum to produce an integrity string and append to log.
+
+Hint: Provide sha256sum simulation output on the fixture.
+
+Make sure you add the ability to reset the exercise as well
+
+we will be using xterm.js + WASM BusyBox + JS mission layer.
+
+Requirements:
+
+Load BusyBox WASM asynchronously, connect stdin/stdout to xterm.js.
+
+Core Unix commands (ls, cd, pwd, cat, grep, find, mkdir, rmdir, rm, cp, mv, touch, less, head, tail, echo, env, I/O redirection) run in WASM.
+
+JS mission layer handles:
+
+Tracking mission/task completion
+
+Simulating sudo, network commands (ping, curl, wget)
+
+Simulating ssh/scp
+
+nano editor (modal or CodeMirror)
+
+Hints, story overlay, narrative text
+
+Persistent state via IndexedDB or localStorage.
+
+Commands in WASM reflect FS changes; JS intercepts outputs for mission validation.
+
+Provide a sample Next.js component showing: xterm.js init, WASM load, mission layer, fake network/remote simulation, nano editor modal.
+
+Keep existing story missions, visual theme, cyberpunk terminal style, and gamified progression.
+
+Fully frontend-only; deployable on Vercel; no backend.
+
+Output should be ready-to-integrate TypeScript/Next.js code with Tailwind CSS styling.
+

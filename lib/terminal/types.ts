@@ -24,7 +24,7 @@ export interface Task {
   command?: string // Optional: exact command required
   commandPattern?: string // Optional: regex pattern for flexible matching
   hints: Hint[]
-  checkCompletion: (output: string, command: string, fs: FileSystem) => boolean
+  checkCompletion?: (output: string, command: string, fs: FileSystem) => boolean // Optional custom check
 }
 
 export interface Mission {
@@ -33,6 +33,7 @@ export interface Mission {
   story: string
   tasks: Task[]
   onComplete?: string // Story text shown on mission completion
+  requireSudo?: boolean
 }
 
 export interface Adventure {

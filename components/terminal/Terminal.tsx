@@ -21,12 +21,12 @@ export function Terminal({ adventure, onMissionComplete, onTaskComplete, onAllCo
   const fitAddonRef = useRef<FitAddon | null>(null)
   const [isMounted, setIsMounted] = useState(false)
   const [state, setState] = useState<TerminalState>({
-    currentPath: "/home/" + (adventure.id === "hack_mainframe" ? "hacker" : "archivist"),
+    currentPath: "/home/" + (adventure.id === "hack_mainframe" ? "student" : "archivist"),
     fileSystem: adventure.initialFileSystem,
     history: [],
     environment: {
-      USER: adventure.id === "hack_mainframe" ? "hacker" : "archivist",
-      HOME: "/home/" + (adventure.id === "hack_mainframe" ? "hacker" : "archivist"),
+      USER: adventure.id === "hack_mainframe" ? "student" : "archivist",
+      HOME: "/home/" + (adventure.id === "hack_mainframe" ? "student" : "archivist"),
       PATH: "/usr/local/bin:/usr/bin:/bin",
       SHELL: "/bin/bash",
     },
@@ -169,21 +169,35 @@ export function Terminal({ adventure, onMissionComplete, onTaskComplete, onAllCo
   }
 
   const handleCommand = (term: XTerm, command: string) => {
+    let updatedPath = state.currentPath
+    
     const result = executeCommand(command, state, (newState) => {
       setState((prev) => ({ ...prev, ...newState }))
+      // Capture the updated path if it was modified
+      if (newState.currentPath) {
+        updatedPath = newState.currentPath
+      }
     })
 
+    // Display output first if present
+    if (result.output) {
+      // Split multi-line output and write each line separately
+      const lines = result.output.split('\n')
+      lines.forEach(line => term.writeln(line))
+    }
+    
+    // Then display error if present (in red)
     if (result.error) {
-      term.writeln(`\x1b[1;31m${result.error}\x1b[0m`)
-    } else if (result.output) {
-      term.writeln(result.output)
+      // Split multi-line errors and write each line separately
+      const errorLines = result.error.split('\n')
+      errorLines.forEach(line => term.writeln(`\x1b[1;31m${line}\x1b[0m`))
     }
 
     // Check task completion
     checkTaskCompletion(command, result.output)
 
-    const currentPath = result.modifiesState && state.currentPath !== state.currentPath ? state.currentPath : state.currentPath
-    writePrompt(term, state.environment.USER, currentPath)
+    // Use the captured updated path for the prompt
+    writePrompt(term, state.environment.USER, updatedPath)
   }
 
   const checkTaskCompletion = (command: string, output: string) => {

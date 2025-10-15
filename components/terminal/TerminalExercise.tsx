@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { AdventureSelection } from "./AdventureSelection"
-import { Terminal } from "./Terminal"
+import { WASMTerminal } from "./WASMTerminal"
 import { MissionOverlay } from "./MissionOverlay"
 import { Adventure } from "@/lib/terminal/types"
 import { motion, AnimatePresence } from "framer-motion"
@@ -18,37 +18,9 @@ export function TerminalExercise() {
   const [completedMissions, setCompletedMissions] = useState<Set<string>>(new Set())
   const [allComplete, setAllComplete] = useState(false)
   const [currentMissionIndex, setCurrentMissionIndex] = useState(0)
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
 
-  // Load saved progress from localStorage
-  useEffect(() => {
-    if (selectedAdventure) {
-      const saved = localStorage.getItem(`terminal_progress_${selectedAdventure}`)
-      if (saved) {
-        try {
-          const data = JSON.parse(saved)
-          setHintsUsed(data.hintsUsed || {})
-          setCompletedTasks(new Set(data.completedTasks || []))
-          setCompletedMissions(new Set(data.completedMissions || []))
-          setCurrentMissionIndex(data.currentMissionIndex || 0)
-        } catch (e) {
-          console.error("Failed to load progress", e)
-        }
-      }
-    }
-  }, [selectedAdventure])
-
-  // Save progress to localStorage
-  useEffect(() => {
-    if (selectedAdventure) {
-      const data = {
-        hintsUsed,
-        completedTasks: Array.from(completedTasks),
-        completedMissions: Array.from(completedMissions),
-        currentMissionIndex,
-      }
-      localStorage.setItem(`terminal_progress_${selectedAdventure}`, JSON.stringify(data))
-    }
-  }, [selectedAdventure, hintsUsed, completedTasks, completedMissions, currentMissionIndex])
+  // Note: Progress is now managed by MissionLayer, not here
 
   const handleAdventureSelect = async (id: "hack_mainframe" | "time_traveler") => {
     setLoading(true)
@@ -73,6 +45,7 @@ export function TerminalExercise() {
   }
 
   const handleTaskComplete = (taskId: string) => {
+    console.log('[TerminalExercise] handleTaskComplete', { taskId })
     setCompletedTasks((prev) => {
       const newSet = new Set(prev)
       newSet.add(taskId)
@@ -100,17 +73,54 @@ export function TerminalExercise() {
     setAllComplete(true)
   }
 
+  const handleProgressUpdate = (missionIndex: number, taskIndex: number) => {
+    console.log('[TerminalExercise] handleProgressUpdate', { missionIndex, taskIndex })
+    setCurrentMissionIndex(missionIndex)
+    setCurrentTaskIndex(taskIndex)
+  }
+
   const handleReset = () => {
-    if (selectedAdventure) {
-      localStorage.removeItem(`terminal_progress_${selectedAdventure}`)
+    if (confirm("Are you sure you want to reset this adventure? All progress will be lost.")) {
+      if (selectedAdventure) {
+        // Clear MissionLayer storage
+        localStorage.removeItem(`mission_progress_${selectedAdventure}`)
+      }
+      setSelectedAdventure(null)
+      setAdventure(null)
+      setHintsUsed({})
+      setCompletedTasks(new Set())
+      setCompletedMissions(new Set())
+      setAllComplete(false)
+      setCurrentMissionIndex(0)
+      setCurrentTaskIndex(0)
     }
-    setSelectedAdventure(null)
-    setAdventure(null)
-    setHintsUsed({})
-    setCompletedTasks(new Set())
-    setCompletedMissions(new Set())
-    setAllComplete(false)
-    setCurrentMissionIndex(0)
+  }
+
+  const handleRestartExercise = async () => {
+    if (confirm("Restart this exercise from the beginning? Your progress will be reset.")) {
+      if (selectedAdventure) {
+        // Clear MissionLayer storage
+        localStorage.removeItem(`mission_progress_${selectedAdventure}`)
+        
+        // Reload the adventure
+        setLoading(true)
+        try {
+          const response = await fetch(`/stories/${selectedAdventure}.json`)
+          const data: Adventure = await response.json()
+          setAdventure(data)
+          setHintsUsed({})
+          setCompletedTasks(new Set())
+          setCompletedMissions(new Set())
+          setAllComplete(false)
+          setCurrentMissionIndex(0)
+          setCurrentTaskIndex(0)
+        } catch (error) {
+          console.error("Failed to reload adventure", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
   }
 
   if (!selectedAdventure) {
@@ -151,7 +161,14 @@ export function TerminalExercise() {
               Mission {currentMissionIndex + 1} of {adventure.missions.length}
             </p>
           </div>
-          <div className="w-32" />
+          <Button
+            variant="outline"
+            onClick={handleRestartExercise}
+            className="text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+          >
+            <Trophy className="w-4 h-4 mr-2" />
+            Restart Exercise
+          </Button>
         </div>
       </div>
 
@@ -160,11 +177,12 @@ export function TerminalExercise() {
         <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-140px)]">
           {/* Terminal */}
           <div className="flex-1 min-h-0">
-            <Terminal
+            <WASMTerminal
               adventure={adventure}
               onMissionComplete={handleMissionComplete}
               onTaskComplete={handleTaskComplete}
               onAllComplete={handleAllComplete}
+              onProgressUpdate={handleProgressUpdate}
             />
           </div>
 
@@ -173,9 +191,7 @@ export function TerminalExercise() {
             {currentMission && (
               <MissionOverlay
                 mission={currentMission}
-                currentTaskIndex={
-                  currentMission.tasks.findIndex((t) => !completedTasks.has(t.id))
-                }
+                currentTaskIndex={currentTaskIndex}
                 completedTasks={completedTasks}
                 hintsUsed={hintsUsed}
                 onHintRequest={handleHintRequest}
