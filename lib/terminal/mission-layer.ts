@@ -1,8 +1,16 @@
 /**
- * Mission Layer - Tracks mission progress, validates tasks, and manages gamification
+ * Mission Layer - Pure Output Validation
+ * Tracks mission progress and validates tasks based on command output only
  */
 
 import { Adventure, Mission, Task, FileSystem } from "./types"
+import { errorLogger, ErrorType } from "./error-logger"
+import { 
+  validationRegistry, 
+  fileSystemValidators, 
+  advancedValidators,
+  ValidationContext 
+} from "./validation-registry"
 
 export interface MissionProgress {
   currentMissionIndex: number
@@ -15,11 +23,11 @@ export interface MissionProgress {
 }
 
 export interface TaskValidationContext {
-  command: string
-  stdout: string
-  stderr: string
-  exitCode: number
-  fileSystem: any // WASM FS instance
+  command: string       // For logging/debugging only
+  stdout: string        // Primary validation source
+  stderr?: string
+  exitCode?: number
+  fileSystem: any       // For custom validators
 }
 
 export class MissionLayer {
@@ -71,61 +79,254 @@ export class MissionLayer {
   }
 
   /**
-   * Validate command execution against current task
+   * Validate task based on command output (pure output validation)
    */
   validateTask(context: TaskValidationContext): boolean {
     const task = this.getCurrentTask()
-    console.log('[MissionLayer] validateTask called', { 
-      hasTask: !!task, 
-      taskId: task?.id,
-      command: context.command,
-      alreadyComplete: task ? this.progress.completedTasks.has(task.id) : false
-    })
+    const mission = this.getCurrentMission()
+    
+    console.log('[MissionLayer] ========== OUTPUT VALIDATION START ==========')
+    console.log('[MissionLayer] Current mission:', mission?.id, mission?.title)
+    console.log('[MissionLayer] Current task:', task?.id, task?.description)
+    console.log('[MissionLayer] Command (for logging):', context.command)
+    console.log('[MissionLayer] Output (first 150 chars):', context.stdout?.substring(0, 150))
+    console.log('[MissionLayer] Task already complete?', task ? this.progress.completedTasks.has(task.id) : 'N/A')
     
     if (!task || this.progress.completedTasks.has(task.id)) {
+      console.log('[MissionLayer] Skipping validation - no task or already complete')
+      console.log('[MissionLayer] ========== VALIDATION END ==========')
       return false
     }
 
-    let isComplete = false
+    // Build ValidationContext for advanced validators
+    const validationContext: ValidationContext = {
+      output: context.stdout || '',
+      stderr: context.stderr || '',
+      exitCode: context.exitCode || 0,
+      fs: context.fileSystem,
+      command: context.command,
+      env: {} // TODO: Pass actual environment when available
+    }
 
-    // Check exact command match
-    if (task.command && context.command.trim() === task.command) {
-      console.log('[MissionLayer] Exact command match!')
+    let isComplete = false
+    let hasAnyValidation = false
+
+    // 1. Check output pattern (regex) - MUST PASS if specified
+    if (task.outputPattern) {
+      hasAnyValidation = true
+      try {
+        const regex = new RegExp(task.outputPattern, 'i')
+        const patternMatches = regex.test(context.stdout || '')
+        
+        console.log('[MissionLayer] Output pattern check:', {
+          pattern: task.outputPattern,
+          matches: patternMatches,
+          output: context.stdout?.substring(0, 100)
+        })
+        
+        if (!patternMatches) {
+          console.log('[MissionLayer] ✗ Output pattern did not match - TASK FAILED')
+          console.log('[MissionLayer] ========== VALIDATION END ==========')
+          return false
+        }
+        
+        console.log('[MissionLayer] ✓ Output pattern matched!')
+        isComplete = true // Pattern passed, continue to check other validators
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('[MissionLayer] ✗ Invalid output pattern:', task.outputPattern, error)
+        errorLogger.log(
+          ErrorType.MISSION_VALIDATION,
+          `Invalid output regex pattern in task: ${task.id}`,
+          { 
+            taskId: task.id, 
+            pattern: task.outputPattern
+          },
+          error instanceof Error ? error : undefined
+        )
+        console.log('[MissionLayer] ========== VALIDATION END ==========')
+        return false
+      }
+    }
+
+    // 2. Check predefined output validation - MUST PASS if specified
+    if (task.outputCheck) {
+      hasAnyValidation = true
+      
+      // Check output validators
+      let validator = validationRegistry[task.outputCheck]
+      
+      // Check filesystem validators
+      if (!validator && fileSystemValidators[task.outputCheck]) {
+        const fsValidator = fileSystemValidators[task.outputCheck]
+        try {
+          const fsCheckPassed = fsValidator(context.fileSystem, task.outputCheckParams)
+          console.log('[MissionLayer] Filesystem check:', {
+            type: task.outputCheck,
+            params: task.outputCheckParams,
+            result: fsCheckPassed
+          })
+          
+          if (!fsCheckPassed) {
+            console.log('[MissionLayer] ✗ Filesystem check failed - TASK FAILED')
+            console.log('[MissionLayer] ========== VALIDATION END ==========')
+            return false
+          }
+          
+          console.log('[MissionLayer] ✓ Filesystem check passed!')
+          isComplete = true
+        } catch (error) {
+          console.error('[MissionLayer] ✗ Filesystem check error:', error)
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Filesystem check failed for task: ${task.id}`,
+            {
+              taskId: task.id,
+              checkType: task.outputCheck,
+              params: task.outputCheckParams
+            },
+            error instanceof Error ? error : undefined
+          )
+          console.log('[MissionLayer] ========== VALIDATION END ==========')
+          return false
+        }
+      }
+      // Check advanced validators
+      else if (!validator && advancedValidators[task.outputCheck]) {
+        const advValidator = advancedValidators[task.outputCheck]
+        try {
+          const advCheckPassed = advValidator(validationContext)
+          console.log('[MissionLayer] Advanced check:', {
+            type: task.outputCheck,
+            params: task.outputCheckParams,
+            result: advCheckPassed
+          })
+          
+          if (!advCheckPassed) {
+            console.log('[MissionLayer] ✗ Advanced check failed - TASK FAILED')
+            console.log('[MissionLayer] ========== VALIDATION END ==========')
+            return false
+          }
+          
+          console.log('[MissionLayer] ✓ Advanced check passed!')
+          isComplete = true
+        } catch (error) {
+          console.error('[MissionLayer] ✗ Advanced check error:', error)
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Advanced check failed for task: ${task.id}`,
+            {
+              taskId: task.id,
+              checkType: task.outputCheck,
+              params: task.outputCheckParams
+            },
+            error instanceof Error ? error : undefined
+          )
+          console.log('[MissionLayer] ========== VALIDATION END ==========')
+          return false
+        }
+      }
+      // Use output validator
+      else if (validator) {
+        try {
+          const outputCheckPassed = validator(context.stdout || '', task.outputCheckParams)
+          
+          console.log('[MissionLayer] Output check:', {
+            type: task.outputCheck,
+            params: task.outputCheckParams,
+            result: outputCheckPassed
+          })
+          
+          if (!outputCheckPassed) {
+            console.log('[MissionLayer] ✗ Output check failed - TASK FAILED')
+            console.log('[MissionLayer] ========== VALIDATION END ==========')
+            return false
+          }
+          
+          console.log('[MissionLayer] ✓ Output check passed!')
+          isComplete = true
+        } catch (error) {
+          console.error('[MissionLayer] ✗ Output check error:', error)
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Output check failed for task: ${task.id}`,
+            {
+              taskId: task.id,
+              checkType: task.outputCheck,
+              params: task.outputCheckParams
+            },
+            error instanceof Error ? error : undefined
+          )
+          console.log('[MissionLayer] ========== VALIDATION END ==========')
+          return false
+        }
+      }
+      else {
+        console.error('[MissionLayer] ✗ Unknown output check type:', task.outputCheck)
+        console.log('[MissionLayer] ========== VALIDATION END ==========')
+        return false
+      }
+    }
+
+    // 3. Require non-empty output - MUST PASS if specified
+    if (task.requireOutput) {
+      hasAnyValidation = true
+      const hasOutput = (context.stdout?.trim().length ?? 0) > 0
+      
+      console.log('[MissionLayer] Require output check:', hasOutput)
+      
+      if (!hasOutput) {
+        console.log('[MissionLayer] ✗ Output is empty but required - TASK FAILED')
+        console.log('[MissionLayer] ========== VALIDATION END ==========')
+        return false
+      }
+      
+      console.log('[MissionLayer] ✓ Output is not empty')
       isComplete = true
     }
 
-    // Check command pattern (regex)
-    if (task.commandPattern && !isComplete) {
+    // 4. Custom validation function - MUST PASS if specified
+    if (task.checkCompletion) {
+      hasAnyValidation = true
       try {
-        // Patterns in JSON use single backslash, which is correct for RegExp constructor
-        // The constructor takes a string and doesn't need double escaping
-        const regex = new RegExp(task.commandPattern, 'i') // Case insensitive for flexibility
-        const matches = regex.test(context.command.trim())
-        console.log('[MissionLayer] Pattern test', { 
-          pattern: task.commandPattern, 
-          command: context.command.trim(),
-          matches 
-        })
-        if (matches) {
-          isComplete = true
+        const customCheckPassed = task.checkCompletion(context.stdout || '', context.fileSystem)
+        
+        console.log('[MissionLayer] Custom check result:', customCheckPassed)
+        
+        if (!customCheckPassed) {
+          console.log('[MissionLayer] ✗ Custom validation failed - TASK FAILED')
+          console.log('[MissionLayer] ========== VALIDATION END ==========')
+          return false
         }
+        
+        console.log('[MissionLayer] ✓ Custom validation passed!')
+        isComplete = true
       } catch (error) {
-        console.error('[MissionLayer] Invalid regex pattern:', task.commandPattern, error)
+        console.error('[MissionLayer] ✗ Custom check error:', error)
+        errorLogger.log(
+          ErrorType.MISSION_VALIDATION,
+          `Custom validation failed for task: ${task.id}`,
+          {
+            taskId: task.id,
+            stdout: context.stdout?.substring(0, 200)
+          },
+          error instanceof Error ? error : undefined
+        )
+        console.log('[MissionLayer] ========== VALIDATION END ==========')
+        return false
       }
     }
 
-    // Custom completion check
-    if (task.checkCompletion && !isComplete) {
-      try {
-        // Convert WASM FS to our FileSystem format for compatibility
-        const mockFileSystem: FileSystem = { root: {} }
-        isComplete = task.checkCompletion(context.stdout, context.command, mockFileSystem)
-      } catch (error) {
-        console.error('[MissionLayer] Custom check completion error:', error)
-      }
+    // If no validation criteria specified, FAIL and warn
+    if (!hasAnyValidation) {
+      console.error('[MissionLayer] ❌ CRITICAL: No validation criteria specified for task:', task.id)
+      console.error('[MissionLayer] Task must have at least one: outputPattern, outputCheck, requireOutput, or checkCompletion')
+      console.log('[MissionLayer] ========== VALIDATION END ==========')
+      return false
     }
 
-    console.log('[MissionLayer] Task validation result:', { isComplete, taskId: task.id })
+    console.log('[MissionLayer] Final validation result:', isComplete ? '✓ COMPLETE' : '✗ INCOMPLETE')
+    console.log('[MissionLayer] ========== VALIDATION END ==========')
 
     if (isComplete) {
       this.completeTask(task.id)
@@ -138,16 +339,21 @@ export class MissionLayer {
    * Complete a task
    */
   private completeTask(taskId: string): void {
-    console.log('[MissionLayer] completeTask called', { taskId })
+    console.log('[MissionLayer] ========== TASK COMPLETION START ==========')
+    console.log('[MissionLayer] Completing task:', taskId)
+    
     this.progress.completedTasks.add(taskId)
     
     // Calculate time taken
     const timeTaken = Date.now() - (this.progress.taskStartTime[taskId] || Date.now())
+    console.log('[MissionLayer] Task completed in:', timeTaken, 'ms')
     
     // Notify listeners FIRST
     if (this.listeners.onTaskComplete) {
       console.log('[MissionLayer] Calling onTaskComplete listener')
       this.listeners.onTaskComplete(taskId)
+    } else {
+      console.log('[MissionLayer] WARNING: No onTaskComplete listener registered!')
     }
 
     // Check if mission is complete
@@ -157,22 +363,25 @@ export class MissionLayer {
         this.progress.completedTasks.has(task.id)
       )
 
-      console.log('[MissionLayer] Mission check', { 
+      console.log('[MissionLayer] Mission check:', { 
         missionId: mission.id,
         allTasksComplete,
         currentTaskIndex: this.progress.currentTaskIndex,
-        totalTasks: mission.tasks.length
+        totalTasks: mission.tasks.length,
+        completedTasks: Array.from(this.progress.completedTasks)
       })
 
       if (allTasksComplete) {
+        console.log('[MissionLayer] Mission complete! Moving to next mission...')
         this.completeMission(mission.id)
       } else {
         // Move to next task
         this.progress.currentTaskIndex++
         const nextTask = this.getCurrentTask()
-        console.log('[MissionLayer] Moving to next task', { 
+        console.log('[MissionLayer] Moving to next task:', { 
           newTaskIndex: this.progress.currentTaskIndex,
-          nextTaskId: nextTask?.id 
+          nextTaskId: nextTask?.id,
+          nextTaskDescription: nextTask?.description
         })
         if (nextTask) {
           this.progress.taskStartTime[nextTask.id] = Date.now()
@@ -181,9 +390,12 @@ export class MissionLayer {
         this.notifyProgressUpdate()
       }
     } else {
+      console.log('[MissionLayer] WARNING: No current mission!')
       // No current mission, just notify progress
       this.notifyProgressUpdate()
     }
+    
+    console.log('[MissionLayer] ========== TASK COMPLETION END ==========')
   }
 
   /**
@@ -304,6 +516,7 @@ export class MissionLayer {
       hintsUsed: this.progress.hintsUsed,
       missionStartTime: this.progress.missionStartTime,
       taskStartTime: this.progress.taskStartTime,
+      lastSaved: new Date().toISOString(),
     }
 
     try {
@@ -313,6 +526,12 @@ export class MissionLayer {
       )
     } catch (error) {
       console.error('Failed to save progress:', error)
+      errorLogger.log(
+        ErrorType.INITIALIZATION,
+        'Failed to save mission progress to localStorage',
+        { adventureId: this.adventure.id },
+        error instanceof Error ? error : undefined
+      )
     }
   }
 
@@ -336,6 +555,12 @@ export class MissionLayer {
       }
     } catch (error) {
       console.error('Failed to load progress:', error)
+      errorLogger.log(
+        ErrorType.INITIALIZATION,
+        'Failed to load mission progress from localStorage',
+        { adventureId },
+        error instanceof Error ? error : undefined
+      )
       return null
     }
   }

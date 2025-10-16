@@ -196,47 +196,30 @@
         {
           "id": "task_1_1",
           "description": "Read the briefing file (output must show mission details)",
+          "validation": {
+            "type": "output",
+            "pattern": "PROJECT_ALPHA|GHOST|infiltrate|omega-corp",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use a command that prints file contents to the screen."
-            },
-            {
-              "level": 2,
-              "text": "The syntax is: cat <filename>"
-            },
-            {
-              "level": 3,
-              "text": "Type: cat README.md"
-            }
-          ],
-          "outputPattern": "PROJECT_ALPHA|GHOST|infiltrate|omega-corp",
-          "outputCheck": "contains",
-          "outputCheckParams": [
-            "PROJECT_ALPHA",
-            "GHOST"
+            {"level": 1, "text": "Use a command that prints file contents to the screen."},
+            {"level": 2, "text": "The syntax is: cat <filename>"},
+            {"level": 3, "text": "Type: cat README.md"}
           ]
         },
         {
           "id": "task_1_2",
           "description": "Create workspace directory temp_exfil (verify it exists in listing)",
+          "validation": {
+            "type": "output",
+            "pattern": "temp_exfil",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Make a directory for collected files, then list to confirm it was created."
-            },
-            {
-              "level": 2,
-              "text": "Use: mkdir <directory_name> and then ls to verify"
-            },
-            {
-              "level": 3,
-              "text": "Type: mkdir temp_exfil && ls"
-            }
-          ],
-          "outputPattern": "temp_exfil",
-          "outputCheck": "dirExists",
-          "outputCheckParams": "/home/student/temp_exfil"
+            {"level": 1, "text": "Make a directory for collected files, then list to confirm it was created."},
+            {"level": 2, "text": "Use: mkdir <directory_name> and then ls to verify"},
+            {"level": 3, "text": "Type: mkdir temp_exfil && ls"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 1 Complete! Agent Kira: 'Good start, Ghost. Workspace created. Now let's test your privileges.'"
@@ -251,44 +234,30 @@
         {
           "id": "task_2_1",
           "description": "List /etc directory contents (try without sudo first to see permission denial)",
+          "validation": {
+            "type": "output",
+            "pattern": "secure\\.conf|hosts",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Try listing /etc first without sudo, then with sudo to see the difference."
-            },
-            {
-              "level": 2,
-              "text": "Prefix your command with 'sudo' to run as root."
-            },
-            {
-              "level": 3,
-              "text": "Type: sudo ls /etc"
-            }
-          ],
-          "outputPattern": "secure\\.conf|hosts",
-          "outputCheck": "sudoExecuted",
-          "outputCheckParams": null
+            {"level": 1, "text": "Try listing /etc first without sudo, then with sudo to see the difference."},
+            {"level": 2, "text": "Prefix your command with 'sudo' to run as root."},
+            {"level": 3, "text": "Type: sudo ls /etc"}
+          ]
         },
         {
           "id": "task_2_2",
           "description": "Read /etc/secure.conf with elevated privileges (output must show clearance code)",
+          "validation": {
+            "type": "output",
+            "pattern": "ORION-ALPHA-9X7|CLEARANCE_CODE",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "This file requires root access. Use sudo to read it."
-            },
-            {
-              "level": 2,
-              "text": "Combine sudo with the cat command."
-            },
-            {
-              "level": 3,
-              "text": "Type: sudo cat /etc/secure.conf"
-            }
-          ],
-          "outputPattern": "ORION-ALPHA-9X7|CLEARANCE_CODE",
-          "outputCheck": "contains",
-          "outputCheckParams": "SECURITY_TOKEN"
+            {"level": 1, "text": "This file requires root access. Use sudo to read it."},
+            {"level": 2, "text": "Combine sudo with the cat command."},
+            {"level": 3, "text": "Type: sudo cat /etc/secure.conf"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 2 Complete! Clearance code acquired! Agent Kira: 'Perfect. You now have the security credentials. Time to navigate the filesystem.'"
@@ -303,65 +272,44 @@
         {
           "id": "task_3_1",
           "description": "Print your current working directory (must show /home/student)",
+          "validation": {
+            "type": "output",
+            "pattern": "/home/student$",
+            "check": "validPath"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "There's a command that prints your working directory."
-            },
-            {
-              "level": 2,
-              "text": "It's a three-letter command."
-            },
-            {
-              "level": 3,
-              "text": "Type: pwd"
-            }
-          ],
-          "outputPattern": "/home/student$",
-          "outputCheck": "contains",
-          "outputCheckParams": "/home/student"
+            {"level": 1, "text": "There's a command that prints your working directory."},
+            {"level": 2, "text": "It's a three-letter command."},
+            {"level": 3, "text": "Type: pwd"}
+          ]
         },
         {
           "id": "task_3_2",
           "description": "List files in your home directory (output must show 'projects')",
+          "validation": {
+            "type": "output",
+            "pattern": "projects",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "List the contents of the current directory."
-            },
-            {
-              "level": 2,
-              "text": "Try using the ls command with the -la flag to see more details."
-            },
-            {
-              "level": 3,
-              "text": "Type: ls -la"
-            }
-          ],
-          "outputPattern": "projects",
-          "outputCheck": "contains",
-          "outputCheckParams": "projects"
+            {"level": 1, "text": "List the contents of the current directory."},
+            {"level": 2, "text": "Try using the ls command with the -la flag to see more details."},
+            {"level": 3, "text": "Type: ls -la"}
+          ]
         },
         {
           "id": "task_3_3",
           "description": "Change directory to projects (pwd must confirm /home/student/projects)",
+          "validation": {
+            "type": "output",
+            "pattern": "/home/student/projects$",
+            "check": "validPath"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Change directory to 'projects' and verify your location."
-            },
-            {
-              "level": 2,
-              "text": "Use cd to change directories, then pwd to confirm."
-            },
-            {
-              "level": 3,
-              "text": "Type: cd projects && pwd"
-            }
-          ],
-          "outputPattern": "/home/student/projects$",
-          "outputCheck": "contains",
-          "outputCheckParams": "/home/student/projects"
+            {"level": 1, "text": "Change directory to 'projects' and verify your location."},
+            {"level": 2, "text": "Use cd to change directories, then pwd to confirm."},
+            {"level": 3, "text": "Type: cd projects && pwd"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 3 Complete! Navigation mastered. Agent Kira: 'Excellent. You're in the projects folder. Now read those classified files.'"
@@ -376,44 +324,30 @@
         {
           "id": "task_4_1",
           "description": "View project_alpha.txt (output must contain SECRET_KEY)",
+          "validation": {
+            "type": "output",
+            "pattern": "PROJECT_ALPHA_SECRET_KEY|OMEGA-2024-ALPHA",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Display the contents of project_alpha.txt."
-            },
-            {
-              "level": 2,
-              "text": "Use the cat command to print file contents."
-            },
-            {
-              "level": 3,
-              "text": "Type: cat project_alpha.txt"
-            }
-          ],
-          "outputPattern": "PROJECT_ALPHA_SECRET_KEY|OMEGA-2024-ALPHA",
-          "outputCheck": "contains",
-          "outputCheckParams": "SECRET_KEY"
+            {"level": 1, "text": "Display the contents of project_alpha.txt."},
+            {"level": 2, "text": "Use the cat command to print file contents."},
+            {"level": 3, "text": "Type: cat project_alpha.txt"}
+          ]
         },
         {
           "id": "task_4_2",
           "description": "Inspect network_log.txt (output must show CONNECTION entries)",
+          "validation": {
+            "type": "output",
+            "pattern": "CONNECTION|192\\.168",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Read the network log file to see connection history."
-            },
-            {
-              "level": 2,
-              "text": "Use cat to display network_log.txt"
-            },
-            {
-              "level": 3,
-              "text": "Type: cat network_log.txt"
-            }
-          ],
-          "outputPattern": "CONNECTION|192\\.168",
-          "outputCheck": "contains",
-          "outputCheckParams": "CONNECTION"
+            {"level": 1, "text": "Read the network log file to see connection history."},
+            {"level": 2, "text": "Use cat to display network_log.txt"},
+            {"level": 3, "text": "Type: cat network_log.txt"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 4 Complete! Evidence located! Agent Kira: 'Good work. Now let's use grep to search for specific patterns in these files.'"
@@ -428,44 +362,30 @@
         {
           "id": "task_5_1",
           "description": "Search for SECRET_KEY in project files (output must show the key)",
+          "validation": {
+            "type": "output",
+            "pattern": "SECRET_KEY.*OMEGA|project_alpha.*SECRET",
+            "check": "grepFound"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use grep to search for 'SECRET_KEY' pattern in all files."
-            },
-            {
-              "level": 2,
-              "text": "Try: grep 'pattern' * to search all files in the current directory."
-            },
-            {
-              "level": 3,
-              "text": "Type: grep SECRET_KEY *"
-            }
-          ],
-          "outputPattern": "SECRET_KEY.*OMEGA|project_alpha.*SECRET",
-          "outputCheck": "grepFound",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use grep to search for 'SECRET_KEY' pattern in all files."},
+            {"level": 2, "text": "Try: grep 'pattern' * to search all files in the current directory."},
+            {"level": 3, "text": "Type: grep SECRET_KEY *"}
+          ]
         },
         {
           "id": "task_5_2",
           "description": "Search for omega-corp.com domain (output must show domain references)",
+          "validation": {
+            "type": "output",
+            "pattern": "omega-corp\\.com",
+            "check": "grepFound"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Search for 'omega-corp.com' across all files."
-            },
-            {
-              "level": 2,
-              "text": "Use grep with the domain name as the search pattern."
-            },
-            {
-              "level": 3,
-              "text": "Type: grep omega-corp.com *"
-            }
-          ],
-          "outputPattern": "omega-corp\\.com",
-          "outputCheck": "contains",
-          "outputCheckParams": "omega-corp.com"
+            {"level": 1, "text": "Search for 'omega-corp.com' across all files."},
+            {"level": 2, "text": "Use grep with the domain name as the search pattern."},
+            {"level": 3, "text": "Type: grep omega-corp.com *"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 5 Complete! Pattern matching mastered! Agent Kira: 'Excellent. You've found the key evidence. Now use find to locate files system-wide.'"
@@ -480,44 +400,30 @@
         {
           "id": "task_6_1",
           "description": "Find project_alpha.txt anywhere on the system (output must show the path)",
+          "validation": {
+            "type": "output",
+            "pattern": "/.*project_alpha\\.txt",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use find to search for project_alpha.txt starting from the root directory."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: find <path> -name '<filename>'"
-            },
-            {
-              "level": 3,
-              "text": "Type: find / -name project_alpha.txt"
-            }
-          ],
-          "outputPattern": "/.*project_alpha\\.txt",
-          "outputCheck": "contains",
-          "outputCheckParams": "project_alpha.txt"
+            {"level": 1, "text": "Use find to search for project_alpha.txt starting from the root directory."},
+            {"level": 2, "text": "Syntax: find <path> -name '<filename>'"},
+            {"level": 3, "text": "Type: find / -name project_alpha.txt"}
+          ]
         },
         {
           "id": "task_6_2",
           "description": "Find all .log files in /logs (output must show log files)",
+          "validation": {
+            "type": "output",
+            "pattern": "\\.log|sys\\.log|access\\.log",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Search for all files ending in .log in the /logs directory."
-            },
-            {
-              "level": 2,
-              "text": "Use wildcards in your search pattern: *.log"
-            },
-            {
-              "level": 3,
-              "text": "Type: find /logs -name '*.log'"
-            }
-          ],
-          "outputPattern": "\\.log|sys\\.log|access\\.log",
-          "outputCheck": "contains",
-          "outputCheckParams": ".log"
+            {"level": 1, "text": "Search for all files ending in .log in the /logs directory."},
+            {"level": 2, "text": "Use wildcards in your search pattern: *.log"},
+            {"level": 3, "text": "Type: find /logs -name '*.log'"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 6 Complete! Filesystem scan successful! Agent Kira: 'Perfect. Now organize your evidence - time for file operations.'"
@@ -532,110 +438,72 @@
         {
           "id": "task_7_1",
           "description": "Ensure temp_exfil directory exists (create if needed, then list to verify)",
+          "validation": {
+            "type": "output",
+            "pattern": "temp_exfil",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Make sure temp_exfil exists in your home directory."
-            },
-            {
-              "level": 2,
-              "text": "Navigate home with: cd ~ then check with ls"
-            },
-            {
-              "level": 3,
-              "text": "Type: cd ~ && mkdir -p temp_exfil && ls"
-            }
-          ],
-          "outputPattern": "temp_exfil",
-          "outputCheck": "dirExists",
-          "outputCheckParams": "/home/student/temp_exfil"
+            {"level": 1, "text": "Make sure temp_exfil exists in your home directory."},
+            {"level": 2, "text": "Navigate home with: cd ~ then check with ls"},
+            {"level": 3, "text": "Type: cd ~ && mkdir -p temp_exfil && ls"}
+          ]
         },
         {
           "id": "task_7_2",
           "description": "Remove the empty old_temp directory (use rmdir)",
+          "validation": {
+            "type": "output",
+            "pattern": "old_temp.*removed|removed.*old_temp|^$",
+            "check": "acceptEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Remove the old_temp directory using rmdir (only works on empty directories)."
-            },
-            {
-              "level": 2,
-              "text": "Use: rmdir <directory_name>"
-            },
-            {
-              "level": 3,
-              "text": "Type: rmdir old_temp"
-            }
-          ],
-          "outputPattern": "old_temp.*removed|removed.*old_temp|^$",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/old_temp"
+            {"level": 1, "text": "Remove the old_temp directory using rmdir (only works on empty directories)."},
+            {"level": 2, "text": "Use: rmdir <directory_name>"},
+            {"level": 3, "text": "Type: rmdir old_temp"}
+          ]
         },
         {
           "id": "task_7_3",
           "description": "Copy project_alpha.txt to temp_exfil (verify with ls)",
+          "validation": {
+            "type": "output",
+            "pattern": "project_alpha",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Copy project_alpha.txt from projects to temp_exfil, then list to confirm."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: cp <source> <destination>"
-            },
-            {
-              "level": 3,
-              "text": "Type: cp projects/project_alpha.txt temp_exfil/ && ls temp_exfil"
-            }
-          ],
-          "outputPattern": "project_alpha",
-          "outputCheck": "fileCopied",
-          "outputCheckParams": {
-            "source": "/home/student/projects/project_alpha.txt",
-            "dest": "/home/student/temp_exfil/project_alpha.txt"
-          }
+            {"level": 1, "text": "Copy project_alpha.txt from projects to temp_exfil, then list to confirm."},
+            {"level": 2, "text": "Syntax: cp <source> <destination>"},
+            {"level": 3, "text": "Type: cp projects/project_alpha.txt temp_exfil/ && ls temp_exfil"}
+          ]
         },
         {
           "id": "task_7_4",
           "description": "Rename network_log.txt to network_analysis.txt in projects (verify with ls)",
+          "validation": {
+            "type": "output",
+            "pattern": "network_analysis",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Rename network_log.txt to network_analysis.txt and verify."
-            },
-            {
-              "level": 2,
-              "text": "Use mv to move/rename: mv <old_name> <new_name>"
-            },
-            {
-              "level": 3,
-              "text": "Type: mv projects/network_log.txt projects/network_analysis.txt && ls projects"
-            }
-          ],
-          "outputPattern": "network_analysis",
-          "outputCheck": "fileExists",
-          "outputCheckParams": "/home/student/projects/network_analysis.txt"
+            {"level": 1, "text": "Rename network_log.txt to network_analysis.txt and verify."},
+            {"level": 2, "text": "Use mv to move/rename: mv <old_name> <new_name>"},
+            {"level": 3, "text": "Type: mv projects/network_log.txt projects/network_analysis.txt && ls projects"}
+          ]
         },
         {
           "id": "task_7_5",
           "description": "Delete old_project_beta.txt from projects (verify it's gone with ls)",
+          "validation": {
+            "type": "output",
+            "pattern": "(?!.*old_project_beta)",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Remove old_project_beta.txt from the projects directory."
-            },
-            {
-              "level": 2,
-              "text": "Use: rm <filename>"
-            },
-            {
-              "level": 3,
-              "text": "Type: rm projects/old_project_beta.txt && ls projects"
-            }
-          ],
-          "outputPattern": "(?!.*old_project_beta)",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/projects/old_project_beta.txt"
+            {"level": 1, "text": "Remove old_project_beta.txt from the projects directory."},
+            {"level": 2, "text": "Use: rm <filename>"},
+            {"level": 3, "text": "Type: rm projects/old_project_beta.txt && ls projects"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 7 Complete! Workspace organized! Agent Kira: 'Clean work. Now create your exfil log file.'"
@@ -650,23 +518,16 @@
         {
           "id": "task_8_1",
           "description": "Create exfil_log.txt in temp_exfil (use touch, then verify with ls -l)",
+          "validation": {
+            "type": "output",
+            "pattern": "exfil_log\\.txt",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use touch to create a new file, then list with details to see the timestamp."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: touch <filename> then ls -l to verify"
-            },
-            {
-              "level": 3,
-              "text": "Type: touch temp_exfil/exfil_log.txt && ls -l temp_exfil"
-            }
-          ],
-          "outputPattern": "exfil_log\\.txt",
-          "outputCheck": "fileExists",
-          "outputCheckParams": "/home/student/temp_exfil/exfil_log.txt"
+            {"level": 1, "text": "Use touch to create a new file, then list with details to see the timestamp."},
+            {"level": 2, "text": "Syntax: touch <filename> then ls -l to verify"},
+            {"level": 3, "text": "Type: touch temp_exfil/exfil_log.txt && ls -l temp_exfil"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 8 Complete! Log file created! Agent Kira: 'Good. Now let's analyze some large log files - time to learn file viewers.'"
@@ -681,69 +542,44 @@
         {
           "id": "task_9_1",
           "description": "View network_analysis.txt with less (will open modal viewer)",
+          "validation": {
+            "type": "command",
+            "pattern": "less.*network_analysis",
+            "check": "commandExecuted"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use less to view the file interactively. Press 'q' to quit when done."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: less <filename>"
-            },
-            {
-              "level": 3,
-              "text": "Type: less projects/network_analysis.txt"
-            }
-          ],
-          "outputPattern": "less.*network_analysis",
-          "outputCheck": "contains",
-          "outputCheckParams": "CONNECTION"
+            {"level": 1, "text": "Use less to view the file interactively. Press 'q' to quit when done."},
+            {"level": 2, "text": "Syntax: less <filename>"},
+            {"level": 3, "text": "Type: less projects/network_analysis.txt"}
+          ]
         },
         {
           "id": "task_9_2",
           "description": "Show first 10 lines of /logs/sys.log (use head)",
+          "validation": {
+            "type": "output",
+            "pattern": "SYSTEM BOOT|Kernel|Loading modules",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use head to display the first few lines of a file."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: head -n <number> <filename>"
-            },
-            {
-              "level": 3,
-              "text": "Type: head -n 10 /logs/sys.log"
-            }
-          ],
-          "outputPattern": "SYSTEM BOOT|Kernel|Loading modules",
-          "outputCheck": "lineCount",
-          "outputCheckParams": {
-            "max": 15
-          }
+            {"level": 1, "text": "Use head to display the first few lines of a file."},
+            {"level": 2, "text": "Syntax: head -n <number> <filename>"},
+            {"level": 3, "text": "Type: head -n 10 /logs/sys.log"}
+          ]
         },
         {
           "id": "task_9_3",
           "description": "Show last 20 lines of /logs/sys.log (use tail)",
+          "validation": {
+            "type": "output",
+            "pattern": "Active connections|uptime|End of log",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use tail to display the last lines of a file."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: tail -n <number> <filename>"
-            },
-            {
-              "level": 3,
-              "text": "Type: tail -n 20 /logs/sys.log"
-            }
-          ],
-          "outputPattern": "Active connections|uptime|End of log",
-          "outputCheck": "lineCount",
-          "outputCheckParams": {
-            "min": 15
-          }
+            {"level": 1, "text": "Use tail to display the last lines of a file."},
+            {"level": 2, "text": "Syntax: tail -n <number> <filename>"},
+            {"level": 3, "text": "Type: tail -n 20 /logs/sys.log"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 9 Complete! File analysis mastered! Agent Kira: 'Perfect. Now test network connectivity - time for recon.'"
@@ -758,65 +594,44 @@
         {
           "id": "task_10_1",
           "description": "Ping agency.local 4 times (output must show RTT stats)",
+          "validation": {
+            "type": "output",
+            "pattern": "agency\\.local|rtt|ms|packet",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use ping with the -c flag to specify count."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: ping -c <count> <hostname>"
-            },
-            {
-              "level": 3,
-              "text": "Type: ping -c 4 agency.local"
-            }
-          ],
-          "outputPattern": "agency\\.local|rtt|ms|packet",
-          "outputCheck": "pingSuccess",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use ping with the -c flag to specify count."},
+            {"level": 2, "text": "Syntax: ping -c <count> <hostname>"},
+            {"level": 3, "text": "Type: ping -c 4 agency.local"}
+          ]
         },
         {
           "id": "task_10_2",
           "description": "Use curl to get briefing from agency.local (output must show response)",
+          "validation": {
+            "type": "output",
+            "pattern": "briefing|status|mission|intel",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use curl to make an HTTP request to the agency server."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: curl http://<host>/<path>"
-            },
-            {
-              "level": 3,
-              "text": "Type: curl http://agency.local/briefing"
-            }
-          ],
-          "outputPattern": "briefing|status|mission|intel",
-          "outputCheck": "httpSuccess",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use curl to make an HTTP request to the agency server."},
+            {"level": 2, "text": "Syntax: curl http://<host>/<path>"},
+            {"level": 3, "text": "Type: curl http://agency.local/briefing"}
+          ]
         },
         {
           "id": "task_10_3",
           "description": "Download briefing.txt with wget (verify file was created with ls)",
+          "validation": {
+            "type": "output",
+            "pattern": "briefing\\.txt|saved|downloaded",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use wget to download a file from a URL."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: wget <url>"
-            },
-            {
-              "level": 3,
-              "text": "Type: wget http://agency.local/resources/briefing.txt && ls"
-            }
-          ],
-          "outputPattern": "briefing\\.txt|saved|downloaded",
-          "outputCheck": "fileExists",
-          "outputCheckParams": "/home/student/briefing.txt"
+            {"level": 1, "text": "Use wget to download a file from a URL."},
+            {"level": 2, "text": "Syntax: wget <url>"},
+            {"level": 3, "text": "Type: wget http://agency.local/resources/briefing.txt && ls"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 10 Complete! Network connectivity confirmed! Agent Kira: 'Good. Now map the network infrastructure.'"
@@ -831,65 +646,44 @@
         {
           "id": "task_11_1",
           "description": "Show active connections and listening ports (use netstat -tuln)",
+          "validation": {
+            "type": "output",
+            "pattern": "tcp|udp|LISTEN|port|22|80",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use netstat to show network connections and listening ports."
-            },
-            {
-              "level": 2,
-              "text": "The -tuln flags show TCP, UDP, listening, and numeric output."
-            },
-            {
-              "level": 3,
-              "text": "Type: netstat -tuln"
-            }
-          ],
-          "outputPattern": "tcp|udp|LISTEN|port|22|80",
-          "outputCheck": "netstatListening",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use netstat to show network connections and listening ports."},
+            {"level": 2, "text": "The -tuln flags show TCP, UDP, listening, and numeric output."},
+            {"level": 3, "text": "Type: netstat -tuln"}
+          ]
         },
         {
           "id": "task_11_2",
           "description": "Resolve omega-corp.com IP address (use dig or nslookup)",
+          "validation": {
+            "type": "output",
+            "pattern": "omega-corp\\.com|192\\.168\\.50\\.10",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use dig or nslookup to resolve a domain to its IP address."
-            },
-            {
-              "level": 2,
-              "text": "Try: dig <domain> or nslookup <domain>"
-            },
-            {
-              "level": 3,
-              "text": "Type: dig omega-corp.com"
-            }
-          ],
-          "outputPattern": "omega-corp\\.com|192\\.168\\.50\\.10",
-          "outputCheck": "digResolved",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use dig or nslookup to resolve a domain to its IP address."},
+            {"level": 2, "text": "Try: dig <domain> or nslookup <domain>"},
+            {"level": 3, "text": "Type: dig omega-corp.com"}
+          ]
         },
         {
           "id": "task_11_3",
           "description": "Show network interfaces (use ifconfig or ip addr)",
+          "validation": {
+            "type": "output",
+            "pattern": "eth0|inet|addr|192\\.168",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use ifconfig or ip addr to display network interface configuration."
-            },
-            {
-              "level": 2,
-              "text": "Modern systems prefer: ip addr show"
-            },
-            {
-              "level": 3,
-              "text": "Type: ifconfig"
-            }
-          ],
-          "outputPattern": "eth0|inet|addr|192\\.168",
-          "outputCheck": "containsIP",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use ifconfig or ip addr to display network interface configuration."},
+            {"level": 2, "text": "Modern systems prefer: ip addr show"},
+            {"level": 3, "text": "Type: ifconfig"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 11 Complete! Network mapped! Agent Kira: 'Excellent recon. Now connect to the field agent and transfer the evidence.'"
@@ -904,47 +698,30 @@
         {
           "id": "task_12_1",
           "description": "SSH to omega_agent@remote-server (will open remote terminal session)",
+          "validation": {
+            "type": "command",
+            "pattern": "ssh.*omega_agent.*remote-server",
+            "check": "commandExecuted"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use ssh to connect to a remote system."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: ssh <user>@<host>"
-            },
-            {
-              "level": 3,
-              "text": "Type: ssh omega_agent@remote-server"
-            }
-          ],
-          "outputPattern": "ssh.*omega_agent.*remote-server",
-          "outputCheck": "sshConnected",
-          "outputCheckParams": null
+            {"level": 1, "text": "Use ssh to connect to a remote system."},
+            {"level": 2, "text": "Syntax: ssh <user>@<host>"},
+            {"level": 3, "text": "Type: ssh omega_agent@remote-server"}
+          ]
         },
         {
           "id": "task_12_2",
           "description": "Transfer exfil_log.txt to remote server using scp (verify file arrives)",
+          "validation": {
+            "type": "command",
+            "pattern": "scp.*exfil_log.*omega_agent.*remote-server",
+            "check": "commandExecuted"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use scp to securely copy files to a remote system."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: scp <local_file> <user>@<host>:<remote_path>"
-            },
-            {
-              "level": 3,
-              "text": "Type: scp temp_exfil/exfil_log.txt omega_agent@remote-server:/home/omega/incoming/"
-            }
-          ],
-          "outputPattern": "scp.*exfil_log.*omega_agent.*remote-server",
-          "outputCheck": "remoteFileExists",
-          "outputCheckParams": {
-            "user": "omega_agent",
-            "path": "/home/omega/incoming/exfil_log.txt"
-          }
+            {"level": 1, "text": "Use scp to securely copy files to a remote system."},
+            {"level": 2, "text": "Syntax: scp <local_file> <user>@<host>:<remote_path>"},
+            {"level": 3, "text": "Type: scp temp_exfil/exfil_log.txt omega_agent@remote-server:/home/omega/incoming/"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 12 Complete! File transferred! Agent Kira: 'Evidence received on the remote server. Now document your operation.'"
@@ -959,77 +736,44 @@
         {
           "id": "task_13_1",
           "description": "Write 'Mission Success' to exfil_log.txt (use echo with > redirection, verify with cat)",
+          "validation": {
+            "type": "output",
+            "pattern": "Mission Success",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use echo with > to overwrite a file, then cat to verify."
-            },
-            {
-              "level": 2,
-              "text": "The > operator redirects output to a file (overwrites)."
-            },
-            {
-              "level": 3,
-              "text": "Type: echo 'Mission Success' > temp_exfil/exfil_log.txt && cat temp_exfil/exfil_log.txt"
-            }
-          ],
-          "outputPattern": "Mission Success",
-          "outputCheck": "fileContains",
-          "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": "Mission Success"
-          }
+            {"level": 1, "text": "Use echo with > to overwrite a file, then cat to verify."},
+            {"level": 2, "text": "The > operator redirects output to a file (overwrites)."},
+            {"level": 3, "text": "Type: echo 'Mission Success' > temp_exfil/exfil_log.txt && cat temp_exfil/exfil_log.txt"}
+          ]
         },
         {
           "id": "task_13_2",
           "description": "Append environment variables to the log (use env with >> redirection)",
+          "validation": {
+            "type": "output",
+            "pattern": "USER|HOME|PATH|Mission Success",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use env with >> to append to a file, then cat to verify."
-            },
-            {
-              "level": 2,
-              "text": "The >> operator appends to a file without overwriting."
-            },
-            {
-              "level": 3,
-              "text": "Type: env >> temp_exfil/exfil_log.txt && cat temp_exfil/exfil_log.txt"
-            }
-          ],
-          "outputPattern": "USER|HOME|PATH|Mission Success",
-          "outputCheck": "fileContains",
-          "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": "USER="
-          }
+            {"level": 1, "text": "Use env with >> to append to a file, then cat to verify."},
+            {"level": 2, "text": "The >> operator appends to a file without overwriting."},
+            {"level": 3, "text": "Type: env >> temp_exfil/exfil_log.txt && cat temp_exfil/exfil_log.txt"}
+          ]
         },
         {
           "id": "task_13_3",
           "description": "Append multi-line note using heredoc (use cat <<EOF >> file)",
+          "validation": {
+            "type": "command",
+            "pattern": "<<EOF|<<'EOF'|heredoc",
+            "check": "commandExecuted"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use a here-document to write multiple lines to a file."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: cat <<EOF >> file.txt then type lines, then EOF on new line"
-            },
-            {
-              "level": 3,
-              "text": "Type: cat <<EOF >> temp_exfil/exfil_log.txt then add lines then type EOF"
-            }
-          ],
-          "outputPattern": "<<EOF|<<'EOF'|heredoc",
-          "outputCheck": "fileContains",
-          "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": [
-              "Mission Success",
-              "USER="
-            ]
-          }
+            {"level": 1, "text": "Use a here-document to write multiple lines to a file."},
+            {"level": 2, "text": "Syntax: cat <<EOF >> file.txt then type lines, then EOF on new line"},
+            {"level": 3, "text": "Type: cat <<EOF >> temp_exfil/exfil_log.txt then add lines then type EOF"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 13 Complete! Report finalized! Agent Kira: 'Perfect documentation. Now use nano to add your signature.'"
@@ -1044,26 +788,16 @@
         {
           "id": "task_14_1",
           "description": "Open exfil_log.txt in nano, add signature line, save and exit",
+          "validation": {
+            "type": "command",
+            "pattern": "nano.*exfil_log",
+            "check": "commandExecuted"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use nano to edit the file. Add a line like '- Operative GHOST' at the end."
-            },
-            {
-              "level": 2,
-              "text": "In nano: Ctrl+O to save, Ctrl+X to exit."
-            },
-            {
-              "level": 3,
-              "text": "Type: nano temp_exfil/exfil_log.txt"
-            }
-          ],
-          "outputPattern": "nano.*exfil_log",
-          "outputCheck": "fileContains",
-          "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": "Agent"
-          }
+            {"level": 1, "text": "Use nano to edit the file. Add a line like '- Operative GHOST' at the end."},
+            {"level": 2, "text": "In nano: Ctrl+O to save, Ctrl+X to exit."},
+            {"level": 3, "text": "Type: nano temp_exfil/exfil_log.txt"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 14 Complete! Document signed! Agent Kira: 'Professional work. Now clean up your workspace - cover your tracks.'"
@@ -1078,23 +812,16 @@
         {
           "id": "task_15_1",
           "description": "Remove temp_exfil directory and all contents (use rm -r, confirm when prompted)",
+          "validation": {
+            "type": "output",
+            "pattern": "(?!.*temp_exfil)|removed|deleted",
+            "check": "acceptEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Use rm -r to remove a directory and all its contents. You'll get a confirmation prompt."
-            },
-            {
-              "level": 2,
-              "text": "The -r flag means recursive (removes directories)."
-            },
-            {
-              "level": 3,
-              "text": "Type: rm -r temp_exfil && ls"
-            }
-          ],
-          "outputPattern": "(?!.*temp_exfil)|removed|deleted",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/temp_exfil"
+            {"level": 1, "text": "Use rm -r to remove a directory and all its contents. You'll get a confirmation prompt."},
+            {"level": 2, "text": "The -r flag means recursive (removes directories)."},
+            {"level": 3, "text": "Type: rm -r temp_exfil && ls"}
+          ]
         }
       ],
       "onComplete": "✅ Mission 15 Complete! Workspace cleaned! Agent Kira: 'Good. Now verify the remote transfer and local cleanup.'"
@@ -1109,47 +836,30 @@
         {
           "id": "task_16_1",
           "description": "SSH to remote and verify exfil_log.txt exists in /home/omega/incoming",
+          "validation": {
+            "type": "output",
+            "pattern": "exfil_log\\.txt",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Connect via SSH and list the incoming directory on the remote server."
-            },
-            {
-              "level": 2,
-              "text": "First: ssh omega_agent@remote-server then: ls /home/omega/incoming"
-            },
-            {
-              "level": 3,
-              "text": "Type: ssh omega_agent@remote-server (then in remote shell: ls /home/omega/incoming)"
-            }
-          ],
-          "outputPattern": "exfil_log\\.txt",
-          "outputCheck": "remoteFileExists",
-          "outputCheckParams": {
-            "user": "omega_agent",
-            "path": "/home/omega/incoming/exfil_log.txt"
-          }
+            {"level": 1, "text": "Connect via SSH and list the incoming directory on the remote server."},
+            {"level": 2, "text": "First: ssh omega_agent@remote-server then: ls /home/omega/incoming"},
+            {"level": 3, "text": "Type: ssh omega_agent@remote-server (then in remote shell: ls /home/omega/incoming)"}
+          ]
         },
         {
           "id": "task_16_2",
           "description": "Exit SSH and verify local workspace is clean (ls should not show temp_exfil)",
+          "validation": {
+            "type": "output",
+            "pattern": "(?!.*temp_exfil)",
+            "check": "notEmpty"
+          },
           "hints": [
-            {
-              "level": 1,
-              "text": "Type 'exit' to leave the SSH session, then list your home directory."
-            },
-            {
-              "level": 2,
-              "text": "Verify temp_exfil is gone and only original files remain."
-            },
-            {
-              "level": 3,
-              "text": "Type: exit (then: cd ~ && ls -la)"
-            }
-          ],
-          "outputPattern": "(?!.*temp_exfil)",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/temp_exfil"
+            {"level": 1, "text": "Type 'exit' to leave the SSH session, then list your home directory."},
+            {"level": 2, "text": "Verify temp_exfil is gone and only original files remain."},
+            {"level": 3, "text": "Type: exit (then: cd ~ && ls -la)"}
+          ]
         }
       ],
       "onComplete": "🎉 OPERATION COMPLETE! All missions accomplished! Agent Kira: 'Flawless execution, Ghost. Welcome to Orion.'"

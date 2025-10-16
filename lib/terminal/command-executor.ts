@@ -316,6 +316,113 @@ export function executeCommand(
         return { stdout: output.join('\n'), stderr: '', exitCode: 0 }
       }
 
+      case 'grep': {
+        if (args.length === 0) {
+          return { stdout: '', stderr: 'grep: missing operand', exitCode: 2 }
+        }
+
+        let pattern = ''
+        let files: string[] = []
+        let recursive = false
+        let ignoreCase = false
+        let invertMatch = false
+        let lineNumber = false
+
+        // Parse flags and arguments
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i]
+          if (arg.startsWith('-')) {
+            if (arg.includes('r') || arg.includes('R')) recursive = true
+            if (arg.includes('i')) ignoreCase = true
+            if (arg.includes('v')) invertMatch = true
+            if (arg.includes('n')) lineNumber = true
+          } else if (!pattern) {
+            pattern = arg
+          } else {
+            files.push(arg)
+          }
+        }
+
+        if (!pattern) {
+          return { stdout: '', stderr: 'grep: missing pattern', exitCode: 2 }
+        }
+
+        // If no files specified and not recursive, read from stdin (not supported here)
+        if (files.length === 0 && !recursive) {
+          return { stdout: '', stderr: 'grep: no files specified', exitCode: 2 }
+        }
+
+        // Handle * glob pattern
+        if (files.length === 1 && files[0] === '*') {
+          try {
+            files = fs.readdir(currentPath).filter(f => {
+              const fullPath = currentPath === '/' ? `/${f}` : `${currentPath}/${f}`
+              const stat = fs.stat(fullPath)
+              return !stat.isDirectory()
+            })
+          } catch (e) {
+            return { stdout: '', stderr: `grep: ${e instanceof Error ? e.message : 'Error'}`, exitCode: 2 }
+          }
+        }
+
+        const output: string[] = []
+        let matchFound = false
+        const regex = new RegExp(pattern, ignoreCase ? 'i' : '')
+
+        for (const file of files) {
+          const fullPath = resolvePath(currentPath, file, username)
+
+          if (!fs.exists(fullPath)) {
+            output.push(`grep: ${file}: No such file or directory`)
+            continue
+          }
+
+          const stat = fs.stat(fullPath)
+
+          // Check permissions
+          if (stat.owner === 'root' && !isSudo) {
+            output.push(`grep: ${file}: Permission denied`)
+            continue
+          }
+
+          if (stat.isDirectory()) {
+            if (!recursive) {
+              output.push(`grep: ${file}: Is a directory`)
+              continue
+            }
+            // Recursive not fully implemented
+            continue
+          }
+
+          try {
+            const content = fs.readFile(fullPath, { encoding: 'utf8' }) as string
+            const lines = content.split('\n')
+
+            lines.forEach((line, index) => {
+              const matches = regex.test(line)
+              const shouldOutput = invertMatch ? !matches : matches
+
+              if (shouldOutput) {
+                matchFound = true
+                let prefix = files.length > 1 ? `${file}:` : ''
+                if (lineNumber) {
+                  prefix += `${index + 1}:`
+                }
+                output.push(prefix + line)
+              }
+            })
+          } catch (e) {
+            output.push(`grep: ${file}: ${e instanceof Error ? e.message : 'Error'}`)
+          }
+        }
+
+        return { 
+          stdout: output.join('\n'), 
+          stderr: '', 
+          exitCode: matchFound ? 0 : 1 
+        }
+      }
+
       case 'mkdir': {
         if (args.length === 0) {
           return { stdout: '', stderr: 'mkdir: missing operand', exitCode: 1 }
@@ -432,7 +539,7 @@ export function executeCommand(
         }
 
         const source = resolvePath(currentPath, args[0], username)
-        const dest = resolvePath(currentPath, args[1], username)
+        let dest = resolvePath(currentPath, args[1], username)
 
         try {
           if (!fs.exists(source)) {
@@ -449,6 +556,15 @@ export function executeCommand(
               stdout: '',
               stderr: `cp: omitting directory '${args[0]}'`,
               exitCode: 1,
+            }
+          }
+
+          // If destination is a directory, append the source filename
+          if (fs.exists(dest)) {
+            const destStat = fs.stat(dest)
+            if (destStat.isDirectory()) {
+              const sourceFilename = basename(source)
+              dest = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
             }
           }
 
@@ -471,9 +587,18 @@ export function executeCommand(
         }
 
         const source = resolvePath(currentPath, args[0], username)
-        const dest = resolvePath(currentPath, args[1], username)
+        let dest = resolvePath(currentPath, args[1], username)
 
         try {
+          // If destination is a directory, append the source filename
+          if (fs.exists(dest)) {
+            const destStat = fs.stat(dest)
+            if (destStat.isDirectory()) {
+              const sourceFilename = basename(source)
+              dest = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
+            }
+          }
+
           fs.rename(source, dest)
         } catch (e) {
           return {

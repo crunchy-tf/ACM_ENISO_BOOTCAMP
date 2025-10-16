@@ -16,16 +16,73 @@ export interface RemoteServer {
   files: Record<string, string>
 }
 
+type NetworkCommandHandler = (args: string[], context?: any) => NetworkResponse
+
 /**
  * Network simulator for fake network commands
  */
 export class NetworkSimulator {
   private servers: Map<string, RemoteServer>
   private currentConnection: string | null = null
+  private commandRegistry: Map<string, NetworkCommandHandler>
 
   constructor() {
     this.servers = new Map()
+    this.commandRegistry = new Map()
     this.initializeServers()
+    this.registerCommands()
+  }
+
+  /**
+   * Register all network commands
+   */
+  private registerCommands(): void {
+    this.commandRegistry.set('ping', (args) => this.ping(args[0] || 'localhost'))
+    this.commandRegistry.set('curl', (args) => this.curl(args[0] || ''))
+    this.commandRegistry.set('wget', (args, context) => this.wget(args[0] || '', context?.fs, context?.currentPath))
+    this.commandRegistry.set('ssh', (args) => this.ssh(args[0] || ''))
+    this.commandRegistry.set('scp', (args, context) => this.scp(args[0] || '', args[1] || '', context?.fs, context?.currentPath))
+    this.commandRegistry.set('ifconfig', () => this.ifconfig())
+    this.commandRegistry.set('netstat', (args) => this.netstat(args))
+    this.commandRegistry.set('dig', (args) => this.dig(args))
+    this.commandRegistry.set('nslookup', (args) => this.nslookup(args[0] || ''))
+    this.commandRegistry.set('ip', (args) => this.ipAddr(args))
+  }
+
+  /**
+   * Check if a command is a network command
+   */
+  isNetworkCommand(command: string): boolean {
+    return this.commandRegistry.has(command)
+  }
+
+  /**
+   * Execute a network command
+   */
+  execute(command: string, args: string[], context?: any): NetworkResponse {
+    const handler = this.commandRegistry.get(command)
+    if (!handler) {
+      return {
+        success: false,
+        output: '',
+        error: `Network command not found: ${command}`
+      }
+    }
+    return handler(args, context)
+  }
+
+  /**
+   * Register a custom network command
+   */
+  registerCommand(name: string, handler: NetworkCommandHandler): void {
+    this.commandRegistry.set(name, handler)
+  }
+
+  /**
+   * Get all registered network commands
+   */
+  getCommands(): string[] {
+    return Array.from(this.commandRegistry.keys())
   }
 
   /**
@@ -427,8 +484,22 @@ lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
   /**
    * Simulate netstat
    */
-  netstat(): NetworkResponse {
-    const output = `Active Internet connections (only servers)
+  netstat(args?: string[]): NetworkResponse {
+    // Support netstat -tuln flag
+    const flags = args?.join(' ') || ''
+    const showTuln = flags.includes('-t') || flags.includes('-u') || flags.includes('-l') || flags.includes('-n')
+
+    const output = showTuln 
+      ? `Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
+tcp        0      0 127.0.0.1:3000          0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:443             0.0.0.0:*               LISTEN
+udp        0      0 0.0.0.0:68              0.0.0.0:*
+tcp6       0      0 :::80                   :::*                    LISTEN
+tcp6       0      0 :::22                   :::*                    LISTEN`
+      : `Active Internet connections (only servers)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State
 tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
 tcp        0      0 127.0.0.1:3000          0.0.0.0:*               LISTEN
@@ -441,7 +512,17 @@ tcp6       0      0 :::22                   :::*                    LISTEN`
   /**
    * Simulate dig command (DNS lookup)
    */
-  dig(domain: string): NetworkResponse {
+  dig(args: string[]): NetworkResponse {
+    if (args.length === 0) {
+      return {
+        success: false,
+        output: '',
+        error: 'usage: dig <domain>',
+      }
+    }
+
+    const domain = args[0]
+    const short = args.includes('+short')
     const server = this.findServer(domain)
 
     if (!server) {
@@ -450,6 +531,11 @@ tcp6       0      0 :::22                   :::*                    LISTEN`
 ;; connection timed out; no servers could be reached`
 
       return { success: false, output, error: 'DNS lookup failed' }
+    }
+
+    // Short output format
+    if (short) {
+      return { success: true, output: server.ip }
     }
 
     const output = `; <<>> DiG 9.10.6 <<>> ${domain}
@@ -502,7 +588,18 @@ Address: ${server.ip}`
   /**
    * Simulate ip addr command
    */
-  ipAddr(): NetworkResponse {
+  ipAddr(args?: string[]): NetworkResponse {
+    // Support 'ip addr show' or 'ip addr'
+    const showAddr = !args || args.length === 0 || args[0] === 'addr' || args.includes('show')
+
+    if (!showAddr) {
+      return {
+        success: false,
+        output: '',
+        error: 'usage: ip addr [show]',
+      }
+    }
+
     const output = `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo

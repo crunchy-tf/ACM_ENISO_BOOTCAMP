@@ -1,0 +1,285 @@
+{
+  "id": "hack_mainframe",
+  "title": "Hack the Mainframe",
+  "description": "★ CLASSIFIED OPERATION - CLEARANCE LEVEL: ORION ★\n\nYou've been booted into the Orion training sandbox. Your mission: Infiltrate Omega Corp's systems and expose their illegal surveillance operation. Every command you execute will be validated based on its results - not what you type, but what you achieve.\n\nRemember: Multiple solutions exist for every challenge. Think creatively. Master the terminal. Become a shadow.\n\nWelcome to Operation GHOST.",
+  "theme": "cyberpunk",
+  "initialFileSystem": {
+    "root": {
+      "home": {
+        "type": "directory",
+        "name": "home",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "student": {
+            "type": "directory",
+            "name": "student",
+            "permissions": "rwxr-xr-x",
+            "owner": "student",
+            "children": {
+              "README.md": {
+                "type": "file",
+                "name": "README.md",
+                "permissions": "rw-r--r--",
+                "owner": "student",
+                "content": "ORION SANDBOX - OPERATION BRIEFING\n===================================\n\nCLASSIFIED - AGENT EYES ONLY\n\nAgent Codename: GHOST\nMission: Infiltrate Omega Corp mainframe\nObjective: Extract evidence of illegal surveillance\n\nMISSION PARAMETERS:\n1. Navigate the filesystem\n2. Locate classified documents\n3. Collect evidence in secure staging area\n4. Transfer data to field agent\n5. Cover your tracks\n\nINITIAL INTEL:\n- Target: Omega Corp internal systems\n- Key files located in /home/student/projects\n- Evidence of PROJECT_ALPHA operations\n- Domain: omega-corp.com\n- Remote agent: omega_agent@remote-server\n\nRULES OF ENGAGEMENT:\n- Use sudo for privileged operations\n- Create workspace: /home/student/temp_exfil\n- Do NOT run destructive commands without confirmation\n- Follow mission objectives in sequence\n\nGood hunting, operative.\n- Agent Kira"
+              },
+              "projects": {
+                "type": "directory",
+                "name": "projects",
+                "permissions": "rwxr-xr-x",
+                "owner": "student",
+                "children": {
+                  "project_alpha.txt": {
+                    "type": "file",
+                    "name": "project_alpha.txt",
+                    "permissions": "rw-r--r--",
+                    "owner": "student",
+                    "content": "PROJECT ALPHA - SURVEILLANCE INITIATIVE\n\nProject Lead: Director Harrison\nStatus: ACTIVE\nClearance: TOP SECRET\n\nOBJECTIVE:\nDeploy mass surveillance across 15 major cities.\n\nTECHNICAL SPECS:\n- Data Collection Points: 10,000+\n- Daily Data Volume: 50TB\n- Storage: omega-corp.com/data-lake\n\nCREDENTIALS:\nPROJECT_ALPHA_SECRET_KEY=OMEGA-2024-ALPHA-7X9K\nAPI_ENDPOINT=https://api.omega-corp.com/v2/surveillance\n\nTARGETS:\n- Communications metadata\n- Location tracking\n- Financial transactions\n\nDEPLOYMENT SERVERS:\n192.168.50.10 - Primary collection\n192.168.50.11 - Backup storage\nomega-corp.com - Command & Control\n\nNOTE: This operation violates multiple privacy laws.\nEvidence must be secured for whistleblower action."
+                  },
+                  "network_log.txt": {
+                    "type": "file",
+                    "name": "network_log.txt",
+                    "permissions": "rw-r--r--",
+                    "owner": "student",
+                    "content": "OMEGA CORP NETWORK ACTIVITY LOG\n\n2024-10-01 08:15:23 | CONNECTION | 192.168.50.10 -> omega-corp.com | PORT 443\n2024-10-01 08:15:45 | DATA_TRANSFER | 2.3GB uploaded\n2024-10-01 09:22:11 | CONNECTION | 192.168.50.11 -> backup.omega-corp.com\n2024-10-01 10:45:33 | ALERT | Unusual traffic pattern detected"
+                  },
+                  "old_project_beta.txt": {
+                    "type": "file",
+                    "name": "old_project_beta.txt",
+                    "permissions": "rw-r--r--",
+                    "owner": "student",
+                    "content": "OLD PROJECT BETA - DEPRECATED"
+                  }
+                }
+              },
+              "old_temp": {
+                "type": "directory",
+                "name": "old_temp",
+                "permissions": "rwxr-xr-x",
+                "owner": "student",
+                "children": {}
+              }
+            }
+          }
+        }
+      },
+      "etc": {
+        "type": "directory",
+        "name": "etc",
+        "permissions": "rwxr-xr-x",
+        "owner": "root",
+        "children": {
+          "secure.conf": {
+            "type": "file",
+            "name": "secure.conf",
+            "permissions": "rw-------",
+            "owner": "root",
+            "content": "CLEARANCE_CODE=ORION-ALPHA-9X7\nSECURITY_LEVEL=MAXIMUM"
+          }
+        }
+      }
+    }
+  },
+  "missions": [
+    {
+      "id": "mission_1",
+      "title": "Mission 1: Briefing & Orientation",
+      "story": "Agent Kira: 'Ghost, you're in. Read your briefing and create your workspace. Show me you understand the basics.'",
+      "tasks": [
+        {
+          "id": "task_1_1",
+          "description": "Read the briefing file (output must show mission details)",
+          "outputPattern": "PROJECT_ALPHA|GHOST|infiltrate|omega",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Display the README.md file contents"},
+            {"level": 2, "text": "Try: cat README.md"},
+            {"level": 3, "text": "Type: cat README.md"}
+          ]
+        },
+        {
+          "id": "task_1_2",
+          "description": "Create workspace directory (verify it exists in listing)",
+          "outputPattern": "temp_exfil",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Create temp_exfil directory, then list to confirm"},
+            {"level": 2, "text": "Try: mkdir temp_exfil && ls"},
+            {"level": 3, "text": "Type: mkdir temp_exfil && ls"}
+          ]
+        }
+      ],
+      "onComplete": "Workspace created. Agent Kira: 'Good start. Now test your privileges.'"
+    },
+    {
+      "id": "mission_2",
+      "title": "Mission 2: Privilege Check",
+      "story": "Some files require elevated privileges. Test sudo access.",
+      "tasks": [
+        {
+          "id": "task_2_1",
+          "description": "Read the secure configuration file (output must show clearance code)",
+          "outputPattern": "ORION-ALPHA-9X7|CLEARANCE_CODE",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Read /etc/secure.conf - you'll need sudo"},
+            {"level": 2, "text": "Try: sudo cat /etc/secure.conf"},
+            {"level": 3, "text": "Type: sudo cat /etc/secure.conf"}
+          ]
+        }
+      ],
+      "onComplete": "Clearance code acquired! Agent Kira: 'Perfect. Time to navigate.'"
+    },
+    {
+      "id": "mission_3",
+      "title": "Mission 3: Navigation",
+      "story": "Master filesystem navigation. Know where you are and where you're going.",
+      "tasks": [
+        {
+          "id": "task_3_1",
+          "description": "Show your current directory (must be in /home/student)",
+          "outputPattern": "/home/student$",
+          "outputCheck": "validPath",
+          "hints": [
+            {"level": 1, "text": "Print your working directory"},
+            {"level": 2, "text": "Try: pwd"},
+            {"level": 3, "text": "Type: pwd"}
+          ]
+        },
+        {
+          "id": "task_3_2",
+          "description": "List contents and find projects folder (output must show 'projects')",
+          "outputPattern": "projects",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "List directory contents"},
+            {"level": 2, "text": "Try: ls"},
+            {"level": 3, "text": "Type: ls"}
+          ]
+        },
+        {
+          "id": "task_3_3",
+          "description": "Navigate to projects and confirm (pwd must show /home/student/projects)",
+          "outputPattern": "/home/student/projects$",
+          "outputCheck": "validPath",
+          "hints": [
+            {"level": 1, "text": "Change to projects directory and verify"},
+            {"level": 2, "text": "Try: cd projects && pwd"},
+            {"level": 3, "text": "Type: cd projects && pwd"}
+          ]
+        }
+      ],
+      "onComplete": "Navigation mastered. Now read the classified files."
+    },
+    {
+      "id": "mission_4",
+      "title": "Mission 4: Read Classified Files",
+      "story": "Read PROJECT ALPHA documentation. Extract the evidence.",
+      "tasks": [
+        {
+          "id": "task_4_1",
+          "description": "Read project_alpha.txt (output must contain SECRET_KEY)",
+          "outputPattern": "PROJECT_ALPHA_SECRET_KEY|OMEGA-2024-ALPHA",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Display project_alpha.txt contents"},
+            {"level": 2, "text": "Try: cat project_alpha.txt"},
+            {"level": 3, "text": "Type: cat project_alpha.txt"}
+          ]
+        },
+        {
+          "id": "task_4_2",
+          "description": "Read network logs (output must show CONNECTION entries)",
+          "outputPattern": "CONNECTION|192\\.168",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Display network_log.txt contents"},
+            {"level": 2, "text": "Try: cat network_log.txt"},
+            {"level": 3, "text": "Type: cat network_log.txt"}
+          ]
+        }
+      ],
+      "onComplete": "Evidence collected. Agent Kira: 'Excellent. Now search for specific patterns.'"
+    },
+    {
+      "id": "mission_5",
+      "title": "Mission 5: Pattern Search",
+      "story": "Use grep to find specific information in files.",
+      "tasks": [
+        {
+          "id": "task_5_1",
+          "description": "Search for SECRET_KEY (output must show the key)",
+          "outputPattern": "SECRET_KEY.*OMEGA",
+          "outputCheck": "grepFound",
+          "hints": [
+            {"level": 1, "text": "Search files for SECRET_KEY pattern"},
+            {"level": 2, "text": "Try: grep SECRET_KEY *"},
+            {"level": 3, "text": "Type: grep SECRET_KEY *"}
+          ]
+        },
+        {
+          "id": "task_5_2",
+          "description": "Search for domain references (output must show omega-corp.com)",
+          "outputPattern": "omega-corp\\.com",
+          "outputCheck": "grepFound",
+          "hints": [
+            {"level": 1, "text": "Search for omega-corp.com in files"},
+            {"level": 2, "text": "Try: grep omega-corp.com *"},
+            {"level": 3, "text": "Type: grep omega-corp.com *"}
+          ]
+        }
+      ],
+      "onComplete": "Pattern matching mastered. Now organize the evidence."
+    },
+    {
+      "id": "mission_6",
+      "title": "Mission 6: File Operations",
+      "story": "Copy evidence, clean up traces, organize your workspace.",
+      "tasks": [
+        {
+          "id": "task_6_1",
+          "description": "Return home and verify location (pwd must show /home/student)",
+          "outputPattern": "/home/student$",
+          "outputCheck": "validPath",
+          "hints": [
+            {"level": 1, "text": "Navigate back home"},
+            {"level": 2, "text": "Try: cd ~ && pwd"},
+            {"level": 3, "text": "Type: cd ~ && pwd"}
+          ]
+        },
+        {
+          "id": "task_6_2",
+          "description": "Copy project_alpha.txt to temp_exfil and verify (ls must show it)",
+          "outputPattern": "project_alpha",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Copy file to temp_exfil then list"},
+            {"level": 2, "text": "Try: cp projects/project_alpha.txt temp_exfil/ && ls temp_exfil"},
+            {"level": 3, "text": "Type: cp projects/project_alpha.txt temp_exfil/ && ls temp_exfil"}
+          ]
+        }
+      ],
+      "onComplete": "Evidence organized. Mission nearly complete!"
+    },
+    {
+      "id": "mission_7",
+      "title": "Mission 7: Create Documentation",
+      "story": "Create your operation log. Document everything.",
+      "tasks": [
+        {
+          "id": "task_7_1",
+          "description": "Create log file and write status (output must show Mission Success)",
+          "outputPattern": "Mission Success",
+          "outputCheck": "notEmpty",
+          "hints": [
+            {"level": 1, "text": "Write 'Mission Success' to log file and read it back"},
+            {"level": 2, "text": "Try: echo 'Mission Success' > temp_exfil/log.txt && cat temp_exfil/log.txt"},
+            {"level": 3, "text": "Type: echo 'Mission Success' > temp_exfil/log.txt && cat temp_exfil/log.txt"}
+          ]
+        }
+      ],
+      "onComplete": "OPERATION COMPLETE!\n\n✓ All evidence collected\n✓ Documentation created\n✓ Mission objectives achieved\n\n🏆 You've mastered the terminal! Agent Kira: 'Outstanding work, operative. You've successfully completed Operation GHOST.'"
+    }
+  ]
+}

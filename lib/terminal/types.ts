@@ -18,13 +18,39 @@ export interface Hint {
   text: string
 }
 
+/**
+ * Output validation types
+ */
+export type OutputCheckType =
+  | 'contains'           // Output contains text
+  | 'notEmpty'          // Output is not empty
+  | 'isEmpty'           // Output is empty (for silent commands)
+  | 'hasError'          // Output contains error message
+  | 'noError'           // Output has no error
+  | 'grepFound'         // Grep found matches
+  | 'validPath'         // Output is valid path format
+  | 'validFlag'         // Output contains FLAG{...} format
+  | 'lineCount'         // Output has X lines
+  | 'wordCount'         // Output has X words
+
+/**
+ * Task definition with pure output validation
+ */
 export interface Task {
   id: string
   description: string
-  command?: string // Optional: exact command required
-  commandPattern?: string // Optional: regex pattern for flexible matching
+  
+  // ========== OUTPUT VALIDATION ==========
+  outputPattern?: string        // Regex pattern for stdout
+  outputCheck?: OutputCheckType // Predefined validation type
+  outputCheckParams?: any       // Parameters for outputCheck
+  
+  // ========== ADVANCED ==========
+  checkCompletion?: (stdout: string, fileSystem: any) => boolean
+  requireOutput?: boolean       // Must have non-empty output
+  
+  // ========== UI ==========
   hints: Hint[]
-  checkCompletion?: (output: string, command: string, fs: FileSystem) => boolean // Optional custom check
 }
 
 export interface Mission {
