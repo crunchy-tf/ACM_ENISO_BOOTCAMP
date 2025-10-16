@@ -92,6 +92,23 @@ export class MissionLayer {
     console.log('[MissionLayer] Output (first 150 chars):', context.stdout?.substring(0, 150))
     console.log('[MissionLayer] Task already complete?', task ? this.progress.completedTasks.has(task.id) : 'N/A')
     
+    // 🎮 SECRET CHEAT CODE: Skip current mission
+    if (context.stdout?.includes('CHEAT_CODE_ACTIVATED:SKIP_MISSION')) {
+      console.log('[MissionLayer] 🎮 CHEAT CODE DETECTED - Skipping current mission!')
+      if (mission) {
+        // Mark all tasks in current mission as complete
+        mission.tasks.forEach(t => {
+          if (!this.progress.completedTasks.has(t.id)) {
+            this.progress.completedTasks.add(t.id)
+          }
+        })
+        // Complete the mission
+        this.completeMission(mission.id)
+      }
+      console.log('[MissionLayer] ========== VALIDATION END ==========')
+      return false // Don't count as normal task completion
+    }
+    
     if (!task || this.progress.completedTasks.has(task.id)) {
       console.log('[MissionLayer] Skipping validation - no task or already complete')
       console.log('[MissionLayer] ========== VALIDATION END ==========')
@@ -115,12 +132,15 @@ export class MissionLayer {
     if (task.outputPattern) {
       hasAnyValidation = true
       try {
-        const regex = new RegExp(task.outputPattern, 'i')
+        const regex = new RegExp(task.outputPattern, 'is')
+        // Validate based on OUTPUT only (what the command produces)
+        // This is more pedagogically sound for a terminal learning game
         const patternMatches = regex.test(context.stdout || '')
         
         console.log('[MissionLayer] Output pattern check:', {
           pattern: task.outputPattern,
           matches: patternMatches,
+          command: context.command,
           output: context.stdout?.substring(0, 100)
         })
         

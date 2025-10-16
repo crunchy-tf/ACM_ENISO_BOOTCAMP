@@ -619,6 +619,157 @@ export function executeCommand(
         return { stdout: args.join(' '), stderr: '', exitCode: 0 }
       }
 
+      case 'head': {
+        if (args.length === 0) {
+          return { stdout: '', stderr: 'head: missing operand', exitCode: 1 }
+        }
+
+        let numLines = 10 // Default to 10 lines
+        let filePath: string | null = null
+
+        // Parse arguments
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i]
+          if (arg === '-n' && i + 1 < args.length) {
+            numLines = parseInt(args[++i])
+            if (isNaN(numLines) || numLines < 0) {
+              return {
+                stdout: '',
+                stderr: 'head: invalid number of lines',
+                exitCode: 1,
+              }
+            }
+          } else if (arg.startsWith('-') && arg.length > 1 && !isNaN(parseInt(arg.substring(1)))) {
+            // Handle -10 format
+            numLines = parseInt(arg.substring(1))
+          } else if (!arg.startsWith('-')) {
+            filePath = arg
+          }
+        }
+
+        if (!filePath) {
+          return { stdout: '', stderr: 'head: missing file operand', exitCode: 1 }
+        }
+
+        const fullPath = resolvePath(currentPath, filePath, username)
+
+        if (!fs.exists(fullPath)) {
+          return {
+            stdout: '',
+            stderr: `head: cannot open '${filePath}' for reading: No such file or directory`,
+            exitCode: 1,
+          }
+        }
+
+        const stat = fs.stat(fullPath)
+
+        // Check permissions
+        if (stat.owner === 'root' && !isSudo) {
+          return {
+            stdout: '',
+            stderr: `head: cannot open '${filePath}' for reading: Permission denied`,
+            exitCode: 1,
+          }
+        }
+
+        if (stat.isDirectory()) {
+          return {
+            stdout: '',
+            stderr: `head: error reading '${filePath}': Is a directory`,
+            exitCode: 1,
+          }
+        }
+
+        try {
+          const content = fs.readFile(fullPath, { encoding: 'utf8' }) as string
+          const lines = content.split('\n')
+          const output = lines.slice(0, numLines).join('\n')
+          return { stdout: output, stderr: '', exitCode: 0 }
+        } catch (e) {
+          return {
+            stdout: '',
+            stderr: `head: ${e instanceof Error ? e.message : 'Error'}`,
+            exitCode: 1,
+          }
+        }
+      }
+
+      case 'tail': {
+        if (args.length === 0) {
+          return { stdout: '', stderr: 'tail: missing operand', exitCode: 1 }
+        }
+
+        let numLines = 10 // Default to 10 lines
+        let filePath: string | null = null
+
+        // Parse arguments
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i]
+          if (arg === '-n' && i + 1 < args.length) {
+            numLines = parseInt(args[++i])
+            if (isNaN(numLines) || numLines < 0) {
+              return {
+                stdout: '',
+                stderr: 'tail: invalid number of lines',
+                exitCode: 1,
+              }
+            }
+          } else if (arg.startsWith('-') && arg.length > 1 && !isNaN(parseInt(arg.substring(1)))) {
+            // Handle -20 format
+            numLines = parseInt(arg.substring(1))
+          } else if (!arg.startsWith('-')) {
+            filePath = arg
+          }
+        }
+
+        if (!filePath) {
+          return { stdout: '', stderr: 'tail: missing file operand', exitCode: 1 }
+        }
+
+        const fullPath = resolvePath(currentPath, filePath, username)
+
+        if (!fs.exists(fullPath)) {
+          return {
+            stdout: '',
+            stderr: `tail: cannot open '${filePath}' for reading: No such file or directory`,
+            exitCode: 1,
+          }
+        }
+
+        const stat = fs.stat(fullPath)
+
+        // Check permissions
+        if (stat.owner === 'root' && !isSudo) {
+          return {
+            stdout: '',
+            stderr: `tail: cannot open '${filePath}' for reading: Permission denied`,
+            exitCode: 1,
+          }
+        }
+
+        if (stat.isDirectory()) {
+          return {
+            stdout: '',
+            stderr: `tail: error reading '${filePath}': Is a directory`,
+            exitCode: 1,
+          }
+        }
+
+        try {
+          const content = fs.readFile(fullPath, { encoding: 'utf8' }) as string
+          const lines = content.split('\n')
+          const startIndex = Math.max(0, lines.length - numLines)
+          const output = lines.slice(startIndex).join('\n')
+          return { stdout: output, stderr: '', exitCode: 0 }
+        } catch (e) {
+          return {
+            stdout: '',
+            stderr: `tail: ${e instanceof Error ? e.message : 'Error'}`,
+            exitCode: 1,
+          }
+        }
+      }
+
       case 'find': {
         if (args.length === 0) {
           return { stdout: '', stderr: 'find: missing operand', exitCode: 1 }
@@ -761,6 +912,14 @@ export function executeCommand(
 
       case 'clear':
         return { stdout: '\x1b[2J\x1b[H', stderr: '', exitCode: 0 }
+
+      case 'konami':
+        // Secret command to skip mission/task - outputs special marker for mission layer
+        return { 
+          stdout: '🎮 CHEAT_CODE_ACTIVATED:SKIP_MISSION 🎮', 
+          stderr: '', 
+          exitCode: 0 
+        }
 
       default:
         return {

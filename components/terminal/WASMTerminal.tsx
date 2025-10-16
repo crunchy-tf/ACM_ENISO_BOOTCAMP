@@ -86,6 +86,7 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   const [lessOpen, setLessOpen] = useState(false)
   const [lessContent, setLessContent] = useState("")
   const [lessFile, setLessFile] = useState("")
+  const lessCommandRef = useRef<string>("")
   
   // SSH session state
   const [sshConnected, setSSHConnected] = useState(false)
@@ -545,6 +546,40 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
       return
     }
 
+    // Handle command chaining with && 
+    if (command.includes(' && ')) {
+      const commands = command.split(' && ').map(cmd => cmd.trim())
+      
+      for (let i = 0; i < commands.length; i++) {
+        const cmd = commands[i]
+        const isLast = i === commands.length - 1
+        
+        // Execute each command in sequence
+        await handleSingleCommand(term, cmd)
+        
+        // Only validate on the last command in the chain
+        if (isLast && missionLayerRef.current) {
+          // Validation happens in handleSingleCommand
+        }
+      }
+      return
+    }
+
+    // Handle single command
+    await handleSingleCommand(term, command)
+  }
+
+  const handleSingleCommand = async (term: XTerm, command: string) => {
+    const busybox = busyboxRef.current
+    const interceptor = interceptorRef.current
+    const sshSim = sshSimRef.current
+    const envSim = envSimRef.current
+    
+    if (!busybox) {
+      term.writeln("\x1b[1;31mError: Terminal not initialized\x1b[0m")
+      return
+    }
+
     // Handle heredoc continuation
     if (heredocTerminatorRef.current) {
       heredocBufferRef.current.push(command)
@@ -627,8 +662,55 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     if (interceptor && interceptor.shouldIntercept(redirection.command)) {
       const result = await interceptor.intercept(redirection.command)
       
+      console.log('[DEBUG] Interceptor result:', {
+        intercepted: result.intercepted,
+        handled: result.handled,
+        action: result.action,
+        modalType: result.modalType,
+        hasModalData: !!result.modalData
+      })
+      
       if (result.intercepted && result.handled) {
         // Command was fully handled by interceptor - show output and stop
+        
+        // Handle modal actions
+        if (result.action === 'openModal') {
+          if (result.modalType === 'less' && result.modalData) {
+            lessCommandRef.current = command
+            setLessFile(result.modalData.filename)
+            setLessContent(result.modalData.content)
+            setLessOpen(true)
+            
+            // Validate immediately with the output (file content) before opening modal
+            if (missionLayerRef.current && result.output) {
+              try {
+                missionLayerRef.current.validateTask({
+                  command,
+                  stdout: result.output, // The file content
+                  stderr: '',
+                  exitCode: 0,
+                  fileSystem: busybox.getFS(),
+                })
+              } catch (validationError) {
+                errorLogger.log(
+                  ErrorType.MISSION_VALIDATION,
+                  `Mission validation error for less command: ${command}`,
+                  { command, output: result.output?.substring(0, 100) },
+                  validationError instanceof Error ? validationError : undefined,
+                  ErrorSeverity.WARNING
+                )
+              }
+            }
+            
+            writePrompt(term, busybox, username)
+            return
+          } else if (result.modalType === 'nano' && result.modalData) {
+            handleEditor(result.modalData.filename)
+            // Don't write prompt yet - modal will handle it on close
+            return
+          }
+        }
+        
         // Handle output
         if (result.output) {
           // Apply output redirection if needed
@@ -655,6 +737,27 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         
         if (result.error) {
           term.writeln(`\x1b[1;31m${result.error}\x1b[0m`)
+        }
+        
+        // Validate intercepted commands with mission layer
+        if (missionLayerRef.current) {
+          try {
+            missionLayerRef.current.validateTask({
+              command,
+              stdout: result.output || '',
+              stderr: result.error,
+              exitCode: result.error ? 1 : 0,
+              fileSystem: busybox.getFS(),
+            })
+          } catch (validationError) {
+            errorLogger.log(
+              ErrorType.MISSION_VALIDATION,
+              `Mission validation error for intercepted command: ${command}`,
+              { command, output: result.output?.substring(0, 100) },
+              validationError instanceof Error ? validationError : undefined,
+              ErrorSeverity.WARNING
+            )
+          }
         }
         
         // Handle context changes
@@ -733,6 +836,27 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
       } else {
         if (result.output) term.writeln(result.output)
         if (result.error) term.writeln(`\x1b[1;31m${result.error}\x1b[0m`)
+      }
+      
+      // Validate with mission layer for network commands
+      if (missionLayerRef.current) {
+        try {
+          missionLayerRef.current.validateTask({
+            command: redirection.command,
+            stdout: result.output || '',
+            stderr: result.error,
+            exitCode: result.success ? 0 : 1,
+            fileSystem: busybox.getFS(),
+          })
+        } catch (validationError) {
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Mission validation error for network command: ${redirection.command}`,
+            { command: redirection.command, result },
+            validationError instanceof Error ? validationError : undefined,
+            ErrorSeverity.WARNING
+          )
+        }
       }
       
       writePrompt(term, busybox, username)
@@ -887,12 +1011,18 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   }
 
   const handleEditor = (filename: string) => {
+    console.log('[DEBUG] handleEditor called with filename:', filename)
     const busybox = busyboxRef.current
-    if (!busybox) return
+    if (!busybox) {
+      console.log('[DEBUG] No busybox!')
+      return
+    }
 
     const context = busybox.getContext()
     const currentPath = context.currentPath
     const fullPath = filename.startsWith('/') ? filename : `${currentPath}/${filename}`
+    
+    console.log('[DEBUG] fullPath:', fullPath)
     
     const fs = busybox.getFS()
 
@@ -900,6 +1030,7 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     if (fs.exists(fullPath)) {
       try {
         content = fs.readFile(fullPath, { encoding: 'utf8' }) as string
+        console.log('[DEBUG] File exists, content length:', content.length)
       } catch (error) {
         errorLogger.log(
           ErrorType.EDITOR,
@@ -912,20 +1043,73 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
       }
     }
 
+    console.log('[DEBUG] About to set editor state:', { fullPath, contentLength: content.length })
     setEditorFile(fullPath)
     setEditorContent(content)
     setEditorOpen(true)
+    console.log('[DEBUG] Editor state set!')
   }
 
   const handleEditorSave = (content: string) => {
     const busybox = busyboxRef.current
-    if (!busybox) return
+    if (!busybox) {
+      console.log('[DEBUG] No busybox ref!')
+      return
+    }
 
     const fs = busybox.getFS()
 
     try {
+      // Check if content was modified
+      const contentChanged = content !== editorContent
+      
+      console.log('[DEBUG] Nano save details:', {
+        editorFile,
+        contentChanged,
+        oldLength: editorContent.length,
+        newLength: content.length,
+        oldContent: editorContent.substring(0, 100),
+        newContent: content.substring(0, 100),
+        hasMissionLayer: !!missionLayerRef.current
+      })
+      
       fs.writeFile(editorFile, content)
       setEditorOpen(false)
+      
+      // ALWAYS validate, even if content didn't change (in case they just opened and saved)
+      if (missionLayerRef.current) {
+        try {
+          // Create output that matches the pattern "nano.*exfil_log"
+          // Use the full path in stdout to ensure pattern matching works
+          const stdout = `nano ${editorFile}\n[ Read ${content.length} lines ]\n[ Wrote ${content.length} lines ]\nFile saved: ${editorFile}`
+          
+          console.log('[DEBUG] Calling validateTask with:', {
+            command: `nano ${editorFile}`,
+            stdout: stdout,
+            hasFileSystem: !!fs
+          })
+          
+          const result = missionLayerRef.current.validateTask({
+            command: `nano ${editorFile}`,
+            stdout: stdout,
+            stderr: '',
+            exitCode: 0,
+            fileSystem: fs,
+          })
+          console.log('[DEBUG] Nano validation result:', result)
+        } catch (validationError) {
+          console.error('[DEBUG] Nano validation error:', validationError)
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Mission validation error after nano save: ${editorFile}`,
+            { filename: editorFile },
+            validationError instanceof Error ? validationError : undefined,
+            ErrorSeverity.WARNING
+          )
+        }
+      } else {
+        console.log('[DEBUG] No mission layer ref available for validation!')
+      }
       
       // Refresh terminal
       if (xtermRef.current) {
@@ -954,8 +1138,15 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   const handleLessClose = () => {
     setLessOpen(false)
     const busybox = busyboxRef.current
-    if (xtermRef.current && busybox) {
-      writePrompt(xtermRef.current, busybox, username)
+    const term = xtermRef.current
+    
+    // Clear the stored command
+    lessCommandRef.current = ""
+    
+    // Refocus terminal and write prompt
+    if (term && busybox) {
+      term.focus()
+      writePrompt(term, busybox, username)
     }
   }
 
@@ -1038,19 +1229,17 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col relative">
       <div ref={terminalRef} className="w-full h-full flex-1" />
       
-      {/* Nano Editor Modal */}
-      {editorOpen && (
-        <NanoEditor
-          isOpen={editorOpen}
-          filename={editorFile}
-          initialContent={editorContent}
-          onSave={handleEditorSave}
-          onClose={handleEditorClose}
-        />
-      )}
+      {/* Nano Editor Modal - now using fixed positioning */}
+      <NanoEditor
+        isOpen={editorOpen}
+        filename={editorFile}
+        initialContent={editorContent}
+        onSave={handleEditorSave}
+        onClose={handleEditorClose}
+      />
       
       {/* Less Viewer Modal */}
       {lessOpen && (

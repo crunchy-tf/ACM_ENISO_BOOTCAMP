@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Save, X } from "lucide-react"
 
@@ -72,24 +71,40 @@ export function NanoEditor({ isOpen, onClose, filename, initialContent, onSave }
     }
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl h-[80vh] p-0 bg-[#1a1a2e] border-2 border-green-500/30">
-        <DialogHeader className="bg-[#0a0e27] px-4 py-3 border-b border-green-500/30">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-green-500 font-mono text-sm flex items-center gap-2">
-              <span className="text-green-400">GNU nano 2.9.3</span>
-              <span className="text-gray-400">File:</span>
-              <span className="text-cyan-400">{filename}</span>
-              {isSaved && (
-                <span className="text-green-400 text-xs animate-pulse">[ Saved ]</span>
-              )}
-            </DialogTitle>
-          </div>
-        </DialogHeader>
+  if (!isOpen) return null
 
+  return (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div className="w-full max-w-4xl h-[80vh] flex flex-col bg-[#1a1a2e] border-2 border-green-500/30 rounded-lg shadow-2xl">
+        {/* Header */}
+        <div className="bg-[#0a0e27] px-4 py-3 border-b border-green-500/30 flex items-center justify-between">
+          <div className="text-green-500 font-mono text-sm flex items-center gap-2">
+            <span className="text-green-400">GNU nano 2.9.3</span>
+            <span className="text-gray-400">File:</span>
+            <span className="text-cyan-400">{filename}</span>
+            {isSaved && (
+              <span className="text-green-400 text-xs animate-pulse">[ Saved ]</span>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-gray-400 hover:text-white hover:bg-red-500/20"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Editor area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Editor area */}
           <div className="flex-1 relative overflow-hidden">
             <textarea
               ref={textareaRef}
@@ -189,7 +204,7 @@ export function NanoEditor({ isOpen, onClose, filename, initialContent, onSave }
             Cancel
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }

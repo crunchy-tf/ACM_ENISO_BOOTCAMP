@@ -37,7 +37,17 @@ export class NetworkSimulator {
    * Register all network commands
    */
   private registerCommands(): void {
-    this.commandRegistry.set('ping', (args) => this.ping(args[0] || 'localhost'))
+    this.commandRegistry.set('ping', (args) => {
+      // Parse flags like -c (count)
+      let target = args[0] || 'localhost'
+      if (args.includes('-c')) {
+        // Skip -c and its value, get the actual target
+        const cIndex = args.indexOf('-c')
+        const filtered = args.filter((_, i) => i !== cIndex && i !== cIndex + 1)
+        target = filtered[0] || 'localhost'
+      }
+      return this.ping(target)
+    })
     this.commandRegistry.set('curl', (args) => this.curl(args[0] || ''))
     this.commandRegistry.set('wget', (args, context) => this.wget(args[0] || '', context?.fs, context?.currentPath))
     this.commandRegistry.set('ssh', (args) => this.ssh(args[0] || ''))
@@ -118,9 +128,16 @@ export class NetworkSimulator {
     // Agency local network
     this.servers.set('agency.local', {
       hostname: 'agency.local',
-      ip: '192.168.1.100',
+      ip: '10.0.1.100',
       username: 'agent',
       files: {
+        '/briefing': JSON.stringify({
+          status: 'ACTIVE',
+          mission: 'PROJECT_ALPHA',
+          clearance: 'TOP_SECRET',
+          agent: 'GHOST',
+          message: 'Evidence collection authorized. Proceed with caution.',
+        }),
         '/var/www/briefing': JSON.stringify({
           status: 'ACTIVE',
           mission: 'PROJECT_ALPHA',

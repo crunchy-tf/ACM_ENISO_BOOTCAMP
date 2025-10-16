@@ -110,6 +110,24 @@ export const validationRegistry: Record<string, OutputValidator> = {
   },
 
   /**
+   * Check if head command was used successfully (output has content and reasonable line count)
+   */
+  headUsed: (output) => {
+    return output.trim().length > 0 && 
+           !output.includes('command not found') &&
+           !output.includes('No such file')
+  },
+
+  /**
+   * Check if tail command was used successfully (output has content and reasonable line count)
+   */
+  tailUsed: (output) => {
+    return output.trim().length > 0 && 
+           !output.includes('command not found') &&
+           !output.includes('No such file')
+  },
+
+  /**
    * PHASE 2 VALIDATORS: Sudo Commands
    */
 
@@ -145,8 +163,9 @@ export const validationRegistry: Record<string, OutputValidator> = {
    */
   sshConnected: (output) => {
     return output.includes('Connected to') ||
+           output.includes('Connection established') ||
            output.includes('connection established') ||
-           (output.includes('ssh') && !output.includes('connection refused') && !output.includes('No route to host'))
+           (output.includes('omega_agent@remote-server') && output.includes('Last login'))
   },
 
   /**

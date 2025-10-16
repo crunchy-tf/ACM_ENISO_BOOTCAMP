@@ -56,7 +56,7 @@ export class CommandInterceptor {
   shouldIntercept(command: string): boolean {
     const cmd = this.parseCommand(command)
     const interceptedCommands = [
-      'ssh',
+      // 'ssh', // Let SSH go through network simulator for proper validation
       'scp',
       'less',
       'more',
@@ -85,11 +85,7 @@ export class CommandInterceptor {
     const cmd = this.parseCommand(command)
 
     // Note: sudo is not intercepted anymore - it goes to command executor for password prompt
-
-    // Handle SSH
-    if (cmd.base === 'ssh') {
-      return this.handleSSH(cmd.args)
-    }
+    // Note: ssh is not intercepted anymore - it goes to network simulator for proper validation
 
     // Handle SCP
     if (cmd.base === 'scp') {
@@ -261,6 +257,7 @@ export class CommandInterceptor {
       const content = this.fs.readFile(fullPath, { encoding: 'utf8' }) as string
 
       // Open less viewer modal
+      // Return the file content as output so it can be validated like any other command
       return {
         intercepted: true,
         handled: true,
@@ -270,7 +267,7 @@ export class CommandInterceptor {
           filename: fullPath,
           content,
         },
-        output: '', // Modal handles display
+        output: content, // Return content as output for validation
       }
     } catch (error) {
       return {

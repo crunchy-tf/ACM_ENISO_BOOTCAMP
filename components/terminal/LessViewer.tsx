@@ -30,6 +30,14 @@ export function LessViewer({
   const contentRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
+  // Handle close with animation
+  const handleClose = () => {
+    setIsAnimating(false)
+    setTimeout(() => {
+      onClose()
+    }, 300)
+  }
+
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true)
@@ -98,7 +106,7 @@ export function LessViewer({
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [isOpen])
+  }, [isOpen, handleClose])
 
   // Track scroll position
   useEffect(() => {
@@ -132,13 +140,6 @@ export function LessViewer({
   }, [isOpen, content])
 
   if (!isVisible) return null
-
-  const handleClose = () => {
-    setIsAnimating(false)
-    setTimeout(() => {
-      onClose()
-    }, 300)
-  }
 
   // Process content for display
   const lines = content.split('\n')

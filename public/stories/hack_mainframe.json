@@ -695,7 +695,7 @@
               "text": "Type: less projects/network_analysis.txt"
             }
           ],
-          "outputPattern": "less.*network_analysis",
+          "outputPattern": "OMEGA CORP NETWORK ACTIVITY LOG|CONNECTION.*192\\.168",
           "outputCheck": "contains",
           "outputCheckParams": "CONNECTION"
         },
@@ -772,7 +772,7 @@
               "text": "Type: ping -c 4 agency.local"
             }
           ],
-          "outputPattern": "agency\\.local|rtt|ms|packet",
+          "outputPattern": "bytes from.*time=",
           "outputCheck": "pingSuccess",
           "outputCheckParams": null
         },
@@ -918,7 +918,7 @@
               "text": "Type: ssh omega_agent@remote-server"
             }
           ],
-          "outputPattern": "ssh.*omega_agent.*remote-server",
+          "outputPattern": "omega_agent@remote-server.*Connection established",
           "outputCheck": "sshConnected",
           "outputCheckParams": null
         },
@@ -939,7 +939,7 @@
               "text": "Type: scp temp_exfil/exfil_log.txt omega_agent@remote-server:/home/omega/incoming/"
             }
           ],
-          "outputPattern": "scp.*exfil_log.*omega_agent.*remote-server",
+          "outputPattern": "exfil_log.*100%",
           "outputCheck": "remoteFileExists",
           "outputCheckParams": {
             "user": "omega_agent",
@@ -1021,7 +1021,7 @@
               "text": "Type: cat <<EOF >> temp_exfil/exfil_log.txt then add lines then type EOF"
             }
           ],
-          "outputPattern": "<<EOF|<<'EOF'|heredoc",
+          "outputPattern": "Mission Success|USER=",
           "outputCheck": "fileContains",
           "outputCheckParams": {
             "path": "/home/student/temp_exfil/exfil_log.txt",
@@ -1059,10 +1059,9 @@
             }
           ],
           "outputPattern": "nano.*exfil_log",
-          "outputCheck": "fileContains",
+          "outputCheck": "fileExists",
           "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": "Agent"
+            "path": "/home/student/temp_exfil/exfil_log.txt"
           }
         }
       ],
