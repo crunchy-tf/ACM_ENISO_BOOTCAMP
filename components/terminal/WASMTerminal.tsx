@@ -493,6 +493,7 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
 
   const handleSudoWithPassword = async (term: XTerm, command: string, password: string) => {
     const busybox = busyboxRef.current
+    const missionLayer = missionLayerRef.current
     if (!busybox) {
       term.writeln("\x1b[1;31mError: Terminal not initialized\x1b[0m")
       return
@@ -507,6 +508,27 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     
     if (result.stderr) {
       term.writeln(`\x1b[1;31m${result.stderr}\x1b[0m`)
+    }
+    
+    // Validate with mission layer (pure output validation)
+    if (missionLayer) {
+      try {
+        missionLayer.validateTask({
+          command: `sudo ${command}`,     // For logging only
+          stdout: result.stdout,          // Primary validation source
+          stderr: result.stderr,
+          exitCode: result.exitCode,
+          fileSystem: busybox.getFS(),
+        })
+      } catch (validationError) {
+        errorLogger.log(
+          ErrorType.MISSION_VALIDATION,
+          `Mission validation error for sudo command: ${command}`,
+          { command, result },
+          validationError instanceof Error ? validationError : undefined,
+          ErrorSeverity.WARNING
+        )
+      }
     }
     
     writePrompt(term, busybox, username)
@@ -972,6 +994,27 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
       
       if (result.exitCode === 0) {
         term.writeln(`\x1b[1;32m✓ Command executed successfully\x1b[0m`)
+      }
+      
+      // Validate with mission layer (pure output validation)
+      if (missionLayerRef.current) {
+        try {
+          missionLayerRef.current.validateTask({
+            command: confirmCommand,        // For logging only
+            stdout: result.stdout,          // Primary validation source
+            stderr: result.stderr,
+            exitCode: result.exitCode,
+            fileSystem: busybox.getFS(),
+          })
+        } catch (validationError) {
+          errorLogger.log(
+            ErrorType.MISSION_VALIDATION,
+            `Mission validation error for destructive command: ${confirmCommand}`,
+            { command: confirmCommand, result },
+            validationError instanceof Error ? validationError : undefined,
+            ErrorSeverity.WARNING
+          )
+        }
       }
     } catch (error) {
       term.writeln(`\x1b[1;31mError: ${error}\x1b[0m`)

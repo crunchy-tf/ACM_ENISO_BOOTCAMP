@@ -5,7 +5,6 @@ import { AdventureSelection } from "./AdventureSelection"
 import { WASMTerminal, WASMTerminalRef } from "./WASMTerminal"
 import { MissionOverlay } from "./MissionOverlay"
 import { ConfirmDialog } from "./ConfirmDialog"
-import { ContinueDialog } from "./ContinueDialog"
 import { Adventure } from "@/lib/terminal/types"
 import { MissionLayer } from "@/lib/terminal/mission-layer"
 import { Button } from "@/components/ui/button"
@@ -22,10 +21,6 @@ export function TerminalExercise() {
   // Reset confirmation dialog state
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
-  
-  // Continue dialog state
-  const [showContinueDialog, setShowContinueDialog] = useState(false)
-  const [savedProgress, setSavedProgress] = useState<any>(null)
   
   // Progress state from MissionLayer - single source of truth
   const [currentMissionIndex, setCurrentMissionIndex] = useState(0)
@@ -98,45 +93,10 @@ export function TerminalExercise() {
       const response = await fetch(`/stories/${id}.json`)
       const data: Adventure = await response.json()
       setAdventure(data)
-      
-      // Check for saved progress
-      const progress = MissionLayer.loadProgress(id)
-      if (progress && (progress.completedTasks?.size || 0) > 0) {
-        setSavedProgress(progress)
-        setShowContinueDialog(true)
-      }
     } catch (error) {
       console.error("Failed to load adventure", error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleContinueProgress = () => {
-    setShowContinueDialog(false)
-    // Progress will be loaded automatically by MissionLayer
-  }
-
-  const handleStartFresh = async () => {
-    setShowContinueDialog(false)
-    
-    if (selectedAdventure && terminalRef.current) {
-      try {
-        // Clear saved progress
-        localStorage.removeItem(`mission_progress_${selectedAdventure}`)
-        
-        // Reset terminal
-        await terminalRef.current.resetExercise()
-        
-        // Reset local state
-        setHintsUsed({})
-        setCompletedTasks(new Set())
-        setCompletedMissions(new Set())
-        setCurrentMissionIndex(0)
-        setCurrentTaskIndex(0)
-      } catch (error) {
-        console.error('[TerminalExercise] Start fresh failed:', error)
-      }
     }
   }
 
@@ -239,17 +199,7 @@ export function TerminalExercise() {
       {/* Header - Fixed height with better contrast */}
       <div className="flex-shrink-0 border-b border-cyan-500/30 bg-slate-900/95 backdrop-blur-md shadow-lg shadow-cyan-500/10">
         <div className="max-w-full mx-auto px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex items-center justify-between gap-4">
-            <Button
-              variant="ghost"
-              onClick={handleReset}
-              className="text-cyan-300 hover:text-cyan-100 hover:bg-cyan-500/20 transition-all duration-200 flex-shrink-0 font-medium"
-              size="sm"
-            >
-              <ArrowLeft className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Change Adventure</span>
-            </Button>
-            
+          <div className="flex items-center justify-center gap-4">
             <div className="text-center flex-1 min-w-0">
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 truncate">
                 {adventure.title}
@@ -316,24 +266,6 @@ export function TerminalExercise() {
         onConfirm={handleConfirmReset}
         onCancel={handleCancelReset}
       />
-      
-      {/* Continue Dialog */}
-      {adventure && savedProgress && (
-        <ContinueDialog
-          isOpen={showContinueDialog}
-          adventureName={adventure.title}
-          stats={{
-            currentMission: (savedProgress.currentMissionIndex || 0) + 1,
-            totalMissions: adventure.missions.length,
-            completedTasks: savedProgress.completedTasks?.size || 0,
-            totalTasks: adventure.missions.reduce((sum, m) => sum + m.tasks.length, 0),
-            hintsUsed: Object.keys(savedProgress.hintsUsed || {}).length,
-            lastPlayed: savedProgress.lastSaved ? new Date(savedProgress.lastSaved) : undefined
-          }}
-          onContinue={handleContinueProgress}
-          onStartFresh={handleStartFresh}
-        />
-      )}
     </div>
   )
 }

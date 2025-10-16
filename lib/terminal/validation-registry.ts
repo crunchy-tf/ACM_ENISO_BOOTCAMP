@@ -118,10 +118,13 @@ export const validationRegistry: Record<string, OutputValidator> = {
    */
   sudoExecuted: (output) => {
     // Sudo typically shows the command output, not "sudo" itself
-    // So we check for absence of sudo-related errors
-    return !output.includes('sudo: command not found') &&
+    // Check for absence of sudo-related errors AND absence of permission denied
+    // Also ensure output is not empty (sudo command produced results)
+    return output.trim().length > 0 &&
+           !output.includes('sudo: command not found') &&
            !output.includes('not in the sudoers file') &&
-           !output.includes('incorrect password')
+           !output.includes('incorrect password') &&
+           !output.includes('Permission denied')
   },
 
   /**
