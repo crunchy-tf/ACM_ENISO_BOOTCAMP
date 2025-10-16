@@ -4,7 +4,7 @@
  */
 
 import { Adventure, Mission, Task, FileSystem } from "./types"
-import { errorLogger, ErrorType } from "./error-logger"
+import { errorLogger, ErrorType, ErrorSeverity } from "./error-logger"
 import { 
   validationRegistry, 
   fileSystemValidators, 
@@ -142,7 +142,8 @@ export class MissionLayer {
             taskId: task.id, 
             pattern: task.outputPattern
           },
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
+          ErrorSeverity.ERROR
         )
         console.log('[MissionLayer] ========== VALIDATION END ==========')
         return false
@@ -185,7 +186,8 @@ export class MissionLayer {
               checkType: task.outputCheck,
               params: task.outputCheckParams
             },
-            error instanceof Error ? error : undefined
+            error instanceof Error ? error : undefined,
+            ErrorSeverity.WARNING
           )
           console.log('[MissionLayer] ========== VALIDATION END ==========')
           return false
@@ -220,7 +222,8 @@ export class MissionLayer {
               checkType: task.outputCheck,
               params: task.outputCheckParams
             },
-            error instanceof Error ? error : undefined
+            error instanceof Error ? error : undefined,
+            ErrorSeverity.WARNING
           )
           console.log('[MissionLayer] ========== VALIDATION END ==========')
           return false
@@ -255,7 +258,8 @@ export class MissionLayer {
               checkType: task.outputCheck,
               params: task.outputCheckParams
             },
-            error instanceof Error ? error : undefined
+            error instanceof Error ? error : undefined,
+            ErrorSeverity.WARNING
           )
           console.log('[MissionLayer] ========== VALIDATION END ==========')
           return false
@@ -310,7 +314,8 @@ export class MissionLayer {
             taskId: task.id,
             stdout: context.stdout?.substring(0, 200)
           },
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
+          ErrorSeverity.WARNING
         )
         console.log('[MissionLayer] ========== VALIDATION END ==========')
         return false
@@ -530,7 +535,8 @@ export class MissionLayer {
         ErrorType.INITIALIZATION,
         'Failed to save mission progress to localStorage',
         { adventureId: this.adventure.id },
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
+        ErrorSeverity.WARNING
       )
     }
   }
@@ -559,7 +565,8 @@ export class MissionLayer {
         ErrorType.INITIALIZATION,
         'Failed to load mission progress from localStorage',
         { adventureId },
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
+        ErrorSeverity.WARNING
       )
       return null
     }

@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Terminal, Clock, Cpu, Zap } from "lucide-react"
+import { Terminal, Cpu, Zap } from "lucide-react"
 import { motion } from "framer-motion"
 
 interface AdventureChoice {
-  id: "hack_mainframe" | "time_traveler"
+  id: "hack_mainframe"
   title: string
   description: string
   icon: React.ReactNode
@@ -29,30 +29,17 @@ const adventures: AdventureChoice[] = [
       "Master Linux commands",
     ],
   },
-  {
-    id: "time_traveler",
-    title: "Time Traveler's Terminal",
-    description: "Restore corrupted timelines and preserve historical records",
-    icon: <Clock className="w-12 h-12" />,
-    theme: "from-cyan-600 to-blue-700",
-    features: [
-      "Sci-fi time archivist story",
-      "Navigate temporal databases",
-      "Fix timeline anomalies",
-      "Learn Unix commands",
-    ],
-  },
 ]
 
 interface AdventureSelectionProps {
-  onSelect: (adventureId: "hack_mainframe" | "time_traveler") => void
+  onSelect: (adventureId: "hack_mainframe") => void
 }
 
 export function AdventureSelection({ onSelect }: AdventureSelectionProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4 z-[100]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -64,92 +51,92 @@ export function AdventureSelection({ onSelect }: AdventureSelectionProps) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 mb-4"
+            className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 mb-4 shadow-lg shadow-cyan-500/40"
           >
-            <Cpu className="w-10 h-10 text-white" />
+            <Cpu className="w-12 h-12 text-white" />
           </motion.div>
 
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600"
+            className="text-5xl sm:text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400"
           >
-            Choose Your Adventure
+            Hack the Mainframe
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-xl text-slate-300 max-w-2xl mx-auto"
+            className="text-xl sm:text-2xl text-slate-100 max-w-2xl mx-auto font-medium"
           >
-            Select your learning path and master Linux commands through an interactive story-driven
-            experience
+            Infiltrate a corrupt corporation's system and master Linux commands through an interactive cyberpunk hacker experience
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-2 text-sm text-slate-400"
+            className="flex items-center justify-center gap-3 text-base text-cyan-200"
           >
-            <Zap className="w-4 h-4 text-yellow-500" />
-            <span>100% browser-based • No installation required • Learn by doing</span>
+            <Zap className="w-5 h-5 text-yellow-400" />
+            <span className="font-semibold">100% browser-based • No installation required • Learn by doing</span>
           </motion.div>
         </div>
 
-        {/* Adventure Cards */}
+        {/* Adventure Card */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="grid md:grid-cols-2 gap-8"
+          className="flex justify-center"
         >
           {adventures.map((adventure, index) => (
             <motion.div
               key={adventure.id}
-              initial={{ opacity: 0, x: index === 0 ? -50 : 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 + index * 0.1 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 }}
               onMouseEnter={() => setHoveredId(adventure.id)}
               onMouseLeave={() => setHoveredId(null)}
+              className="w-full max-w-md"
             >
               <Card
                 className={`h-full border-2 transition-all duration-300 cursor-pointer ${
                   hoveredId === adventure.id
-                    ? "border-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.4)] scale-105"
-                    : "border-slate-700 hover:border-slate-600"
-                } bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur`}
+                    ? "border-cyan-400 shadow-[0_0_40px_rgba(6,182,212,0.5)] scale-105"
+                    : "border-slate-600 hover:border-slate-500"
+                } bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-md`}
                 onClick={() => onSelect(adventure.id)}
               >
                 <CardHeader className="space-y-4">
                   <div
-                    className={`inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br ${adventure.theme} text-white`}
+                    className={`inline-flex items-center justify-center w-20 h-20 rounded-xl bg-gradient-to-br ${adventure.theme} text-white shadow-lg`}
                   >
                     {adventure.icon}
                   </div>
 
                   <div>
-                    <CardTitle className="text-2xl text-white mb-2">{adventure.title}</CardTitle>
-                    <CardDescription className="text-slate-300 text-base">
+                    <CardTitle className="text-3xl text-white mb-2 font-bold">{adventure.title}</CardTitle>
+                    <CardDescription className="text-slate-100 text-lg font-medium">
                       {adventure.description}
                     </CardDescription>
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
+                <CardContent className="space-y-6">
+                  <ul className="space-y-3">
                     {adventure.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-slate-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                      <li key={i} className="flex items-center gap-3 text-base text-slate-200 font-medium">
+                        <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50" />
                         {feature}
                       </li>
                     ))}
                   </ul>
 
                   <Button
-                    className={`w-full bg-gradient-to-r ${adventure.theme} hover:opacity-90 transition-opacity text-white font-semibold`}
+                    className={`w-full bg-gradient-to-r ${adventure.theme} hover:opacity-90 transition-all text-white font-bold text-lg py-7 shadow-xl shadow-green-500/30`}
                     size="lg"
                   >
                     Start Mission
@@ -165,13 +152,13 @@ export function AdventureSelection({ onSelect }: AdventureSelectionProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="text-center space-y-2"
+          className="text-center space-y-3"
         >
-          <p className="text-sm text-slate-500">
+          <p className="text-base text-slate-200 font-medium">
             You'll learn: File operations • Navigation • Text processing • Network commands • And
             more!
           </p>
-          <p className="text-xs text-slate-600">
+          <p className="text-sm text-slate-300">
             Progress is saved automatically in your browser
           </p>
         </motion.div>

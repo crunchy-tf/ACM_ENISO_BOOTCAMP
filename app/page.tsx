@@ -103,6 +103,11 @@ export default function PresentationPage() {
 
   useEffect(() => {
     const handleScroll = (e: WheelEvent) => {
+      // Don't handle scroll if we're on the terminal exercise slide
+      if (slides[currentSlide]?.id === "terminal-exercise") {
+        return
+      }
+      
       if (e.deltaY > 0 && currentSlide < slides.length - 1) {
         setIsVisible(false)
         setTimeout(() => {
@@ -119,6 +124,11 @@ export default function PresentationPage() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle arrow keys if we're on the terminal exercise slide
+      if (slides[currentSlide]?.id === "terminal-exercise") {
+        return
+      }
+      
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         setIsVisible(false)
         setTimeout(() => {
@@ -145,38 +155,42 @@ export default function PresentationPage() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Slide Navigation Dots */}
-      <div className="fixed right-4 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 md:right-8">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              setIsVisible(false)
-              setTimeout(() => {
-                setCurrentSlide(index)
-                setIsVisible(true)
-              }, 300)
-            }}
-            className={`h-3 w-3 rounded-full transition-all duration-300 ${
-              currentSlide === index ? "bg-primary scale-125" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+      {/* Slide Navigation Dots - Hidden on terminal exercise */}
+      {slides[currentSlide]?.id !== "terminal-exercise" && (
+        <div className="fixed right-4 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-3 md:right-8">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setIsVisible(false)
+                setTimeout(() => {
+                  setCurrentSlide(index)
+                  setIsVisible(true)
+                }, 300)
+              }}
+              className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                currentSlide === index ? "bg-primary scale-125" : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* Slide Counter */}
-      <div className="fixed left-4 top-4 z-50 font-mono text-sm text-muted-foreground md:left-8 md:top-8">
-        {String(currentSlide + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
-      </div>
+      {/* Slide Counter - Hidden on terminal exercise */}
+      {slides[currentSlide]?.id !== "terminal-exercise" && (
+        <div className="fixed left-4 top-4 z-50 font-mono text-sm text-muted-foreground md:left-8 md:top-8">
+          {String(currentSlide + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+        </div>
+      )}
 
       {/* Current Slide */}
       <div className={`h-full w-full transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0"}`}>
         {slides[currentSlide].component}
       </div>
 
-      {/* Scroll Indicator */}
-      {currentSlide < slides.length - 1 && (
+      {/* Scroll Indicator - Hidden on terminal exercise */}
+      {currentSlide < slides.length - 1 && slides[currentSlide]?.id !== "terminal-exercise" && (
         <div className="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 animate-bounce">
           <span className="text-xs text-muted-foreground">Scroll or use arrow keys</span>
           <ChevronDown className="h-6 w-6 text-muted-foreground" />

@@ -14,7 +14,7 @@ import { Adventure } from "@/lib/terminal/types"
 import { BusyBoxWASM } from "@/lib/terminal/wasm-busybox"
 import { MissionLayer } from "@/lib/terminal/mission-layer"
 import { NetworkSimulator } from "@/lib/terminal/network-simulator"
-import { errorLogger, ErrorType } from "@/lib/terminal/error-logger"
+import { errorLogger, ErrorType, ErrorSeverity } from "@/lib/terminal/error-logger"
 import { CommandInterceptor } from "@/lib/terminal/command-interceptor"
 import { parseRedirection, executeWithRedirection } from "@/lib/terminal/io-redirection"
 import { SSHSimulator } from "@/lib/terminal/ssh-simulator"
@@ -71,6 +71,11 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   const sudoContextRef = useRef(false)
   const commandHistoryRef = useRef<string[]>([])
   const historyIndexRef = useRef(-1)
+  
+  // Password input state for sudo
+  const passwordModeRef = useRef(false)
+  const passwordBufferRef = useRef("")
+  const pendingSudoCommandRef = useRef<string | null>(null)
   
   // Nano editor state
   const [editorOpen, setEditorOpen] = useState(false)
@@ -136,6 +141,11 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
 
       // 6. Reset sudo context
       sudoContextRef.current = false
+      
+      // 6.1. Reset password mode
+      passwordModeRef.current = false
+      passwordBufferRef.current = ""
+      pendingSudoCommandRef.current = null
 
       // 7. Clear command history
       commandHistoryRef.current = []
@@ -268,7 +278,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         ErrorType.INITIALIZATION,
         `Failed to initialize BusyBox: ${errorMessage}`,
         { adventure: adventure.id },
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
+        ErrorSeverity.ERROR
       )
       return
     }
@@ -411,6 +422,25 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
       if (code === 13) {
         // Enter
         term.write('\r\n')
+        
+        // Check if in password mode
+        if (passwordModeRef.current) {
+          const password = passwordBufferRef.current
+          const sudoCommand = pendingSudoCommandRef.current
+          
+          // Clear password state
+          passwordBufferRef.current = ""
+          passwordModeRef.current = false
+          pendingSudoCommandRef.current = null
+          
+          if (sudoCommand) {
+            handleSudoWithPassword(term, sudoCommand, password)
+          } else {
+            writePrompt(term, busybox, username)
+          }
+          return
+        }
+        
         const command = inputBufferRef.current.trim()
         inputBufferRef.current = ""
 
@@ -421,14 +451,26 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         }
       } else if (code === 127) {
         // Backspace
-        if (inputBufferRef.current.length > 0) {
+        if (passwordModeRef.current) {
+          // In password mode, just remove from buffer without showing anything
+          if (passwordBufferRef.current.length > 0) {
+            passwordBufferRef.current = passwordBufferRef.current.slice(0, -1)
+            term.write('\b \b')
+          }
+        } else if (inputBufferRef.current.length > 0) {
           inputBufferRef.current = inputBufferRef.current.slice(0, -1)
           term.write('\b \b')
         }
       } else if (code >= 32) {
         // Printable character
-        inputBufferRef.current += data
-        term.write(data)
+        if (passwordModeRef.current) {
+          // In password mode, hide the character
+          passwordBufferRef.current += data
+          term.write('*') // Show asterisk instead of actual character
+        } else {
+          inputBufferRef.current += data
+          term.write(data)
+        }
       }
     })
   }
@@ -447,6 +489,27 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     const displayPath = path === `/home/${user}` ? "~" : path
     const sudoIndicator = sudoContextRef.current ? '\x1b[1;31m[SUDO]\x1b[0m ' : ''
     term.write(`${sudoIndicator}\x1b[1;32m${user}@terminal\x1b[0m:\x1b[1;34m${displayPath}\x1b[0m$ `)
+  }
+
+  const handleSudoWithPassword = async (term: XTerm, command: string, password: string) => {
+    const busybox = busyboxRef.current
+    if (!busybox) {
+      term.writeln("\x1b[1;31mError: Terminal not initialized\x1b[0m")
+      return
+    }
+
+    // Execute sudo command with password
+    const result = await busybox.executeSudo(command, password)
+    
+    if (result.stdout) {
+      term.writeln(result.stdout)
+    }
+    
+    if (result.stderr) {
+      term.writeln(`\x1b[1;31m${result.stderr}\x1b[0m`)
+    }
+    
+    writePrompt(term, busybox, username)
   }
 
   const handleCommand = async (term: XTerm, command: string) => {
@@ -519,7 +582,7 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     }
 
     // Parse I/O redirection
-    const redirection = parseRedirection(command)
+    let redirection = parseRedirection(command)
     
     // Check for heredoc
     if (redirection.type === 'heredoc' && redirection.heredocMarker) {
@@ -542,7 +605,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     if (interceptor && interceptor.shouldIntercept(redirection.command)) {
       const result = await interceptor.intercept(redirection.command)
       
-      if (result.intercepted) {
+      if (result.intercepted && result.handled) {
+        // Command was fully handled by interceptor - show output and stop
         // Handle output
         if (result.output) {
           // Apply output redirection if needed
@@ -587,6 +651,30 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         
         writePrompt(term, busybox, username)
         return
+      } else if (result.intercepted && !result.handled) {
+        // Command was intercepted but not handled - apply context changes and continue execution
+        if (result.newContext) {
+          const context = busybox.getContext()
+          if (result.newContext.isSudo !== undefined) {
+            sudoContextRef.current = result.newContext.isSudo
+            busybox.setContext({
+              ...context,
+              isSudo: result.newContext.isSudo
+            })
+          }
+          if (result.newContext.currentPath) {
+            busybox.setContext({
+              ...context,
+              currentPath: result.newContext.currentPath
+            })
+          }
+        }
+        
+        // If interceptor provided an actualCommand, use it instead
+        if (result.actualCommand) {
+          redirection = parseRedirection(result.actualCommand)
+        }
+        // Continue to execute the actual command below
       }
     }
 
@@ -653,8 +741,24 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
     try {
       const result = await busybox.execute(redirection.command)
 
+      // Check if password is required for sudo
+      if (result.requiresPassword && result.pendingCommand) {
+        // Enter password mode
+        passwordModeRef.current = true
+        passwordBufferRef.current = ""
+        pendingSudoCommandRef.current = result.pendingCommand
+        
+        // Show password prompt
+        term.write('[sudo] password for ' + username + ': ')
+        return
+      }
+
       let stdout = result.stdout
       let stderr = result.stderr
+      
+      // Preserve original output for error logging
+      const originalStdout = stdout
+      const originalStderr = stderr
       
       // Apply I/O redirection if needed
       if (redirection.hasRedirection && redirection.target && (redirection.type === 'output' || redirection.type === 'append')) {
@@ -697,19 +801,24 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         if (errorSuggestion) {
           term.writeln(formatErrorSuggestion(errorSuggestion))
         }
+      }
+      
+      // Log errors using original values before redirection
+      if (result.exitCode !== 0) {
+        // Determine severity: expected failures (exit codes 1-2) are INFO, others are WARNINGS
+        const severity = result.exitCode <= 2 ? ErrorSeverity.INFO : ErrorSeverity.WARNING
         
-        // Log stderr output
-        if (result.exitCode !== 0) {
-          errorLogger.log(
-            ErrorType.COMMAND_EXECUTION,
-            `Command failed: ${command}`,
-            {
-              exitCode: result.exitCode,
-              stderr: stderr,
-              stdout: stdout
-            }
-          )
-        }
+        errorLogger.log(
+          ErrorType.COMMAND_EXECUTION,
+          `Command failed: ${command}`,
+          {
+            exitCode: result.exitCode,
+            stderr: originalStderr,
+            stdout: originalStdout
+          },
+          undefined,
+          severity
+        )
       }
       
       // Update environment PWD if command changed directory
@@ -723,8 +832,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         try {
           missionLayerRef.current.validateTask({
             command,                        // For logging only
-            stdout: stdout,                 // Primary validation source
-            stderr: stderr,
+            stdout: originalStdout,         // Primary validation source - use original before redirection
+            stderr: originalStderr,
             exitCode: result.exitCode,
             fileSystem: busybox.getFS(),
           })
@@ -733,7 +842,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
             ErrorType.MISSION_VALIDATION,
             `Mission validation error for command: ${command}`,
             { command, result },
-            validationError instanceof Error ? validationError : undefined
+            validationError instanceof Error ? validationError : undefined,
+            ErrorSeverity.WARNING
           )
         }
       }
@@ -747,7 +857,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         ErrorType.COMMAND_EXECUTION,
         `Command execution error: ${command}`,
         { command },
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
+        ErrorSeverity.ERROR
       )
       writePrompt(term, busybox, username)
     }
@@ -772,7 +883,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
           ErrorType.EDITOR,
           `Failed to read file: ${fullPath}`,
           { filename, fullPath },
-          error instanceof Error ? error : undefined
+          error instanceof Error ? error : undefined,
+          ErrorSeverity.ERROR
         )
         return
       }
@@ -803,7 +915,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         ErrorType.EDITOR,
         `Failed to save file: ${editorFile}`,
         { filename: editorFile },
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
+        ErrorSeverity.ERROR
       )
     }
   }
@@ -882,8 +995,8 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
   }
 
   return (
-    <>
-      <div ref={terminalRef} className="w-full h-full" />
+    <div className="w-full h-full flex flex-col">
+      <div ref={terminalRef} className="w-full h-full flex-1" />
       
       {/* Nano Editor Modal */}
       {editorOpen && (
@@ -926,6 +1039,6 @@ export const WASMTerminal = forwardRef<WASMTerminalRef, WASMTerminalProps>(funct
         onConfirm={handleConfirmExecute}
         onCancel={handleConfirmCancel}
       />
-    </>
+    </div>
   )
 })

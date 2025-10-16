@@ -16,6 +16,8 @@ export interface CommandResult {
   stderr: string
   exitCode: number
   newPath?: string // If cd command changed the path
+  requiresPassword?: boolean // If command requires password authentication
+  pendingCommand?: string // The command waiting for password
 }
 
 /**
@@ -153,12 +155,14 @@ export function executeCommand(
         if (args.length === 0) {
           return { stdout: '', stderr: 'sudo: a command must be specified', exitCode: 1 }
         }
-        // Execute with sudo privileges
-        return executeCommand(
-          args.join(' '),
-          { ...context, isSudo: true },
-          fs
-        )
+        // Request password authentication
+        return {
+          stdout: '',
+          stderr: '',
+          exitCode: 0,
+          requiresPassword: true,
+          pendingCommand: args.join(' ')
+        }
 
       case 'pwd':
         return { stdout: currentPath, stderr: '', exitCode: 0 }
@@ -615,6 +619,146 @@ export function executeCommand(
         return { stdout: args.join(' '), stderr: '', exitCode: 0 }
       }
 
+      case 'find': {
+        if (args.length === 0) {
+          return { stdout: '', stderr: 'find: missing operand', exitCode: 1 }
+        }
+
+        let searchPath = currentPath
+        let namePattern: string | null = null
+        let typeFilter: string | null = null
+        let maxDepth: number | null = null
+        let minDepth: number | null = null
+        let mtimeValue: number | null = null
+
+        // Parse arguments
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i]
+          
+          if (arg === '-name' && i + 1 < args.length) {
+            namePattern = args[++i]
+          } else if (arg === '-type' && i + 1 < args.length) {
+            typeFilter = args[++i]
+          } else if (arg === '-maxdepth' && i + 1 < args.length) {
+            maxDepth = parseInt(args[++i])
+          } else if (arg === '-mindepth' && i + 1 < args.length) {
+            minDepth = parseInt(args[++i])
+          } else if (arg === '-mtime' && i + 1 < args.length) {
+            mtimeValue = parseInt(args[++i])
+          } else if (!arg.startsWith('-')) {
+            // First non-flag argument is the search path
+            if (!namePattern && !typeFilter && !maxDepth) {
+              searchPath = resolvePath(currentPath, arg, username)
+            }
+          }
+        }
+
+        // Check if path exists
+        if (!fs.exists(searchPath)) {
+          return {
+            stdout: '',
+            stderr: `find: '${searchPath}': No such file or directory`,
+            exitCode: 1,
+          }
+        }
+
+        // Check permissions
+        const pathStat = fs.stat(searchPath)
+        if (pathStat.owner === 'root' && !isSudo) {
+          return {
+            stdout: '',
+            stderr: `find: '${searchPath}': Permission denied`,
+            exitCode: 1,
+          }
+        }
+
+        const results: string[] = []
+
+        // Recursive search function
+        const search = (path: string, depth: number = 0) => {
+          try {
+            const stat = fs.stat(path)
+
+            // Check depth constraints
+            if (maxDepth !== null && depth > maxDepth) return
+            if (minDepth !== null && depth < minDepth) {
+              // Don't add to results yet, but continue searching
+              if (stat.isDirectory()) {
+                const entries = fs.readdir(path)
+                for (const entry of entries) {
+                  const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`
+                  search(fullPath, depth + 1)
+                }
+              }
+              return
+            }
+
+            // Check type filter
+            if (typeFilter) {
+              if (typeFilter === 'f' && !stat.isDirectory()) {
+                // File
+              } else if (typeFilter === 'd' && stat.isDirectory()) {
+                // Directory
+              } else {
+                // Type doesn't match, but continue searching if directory
+                if (stat.isDirectory()) {
+                  const entries = fs.readdir(path)
+                  for (const entry of entries) {
+                    const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`
+                    search(fullPath, depth + 1)
+                  }
+                }
+                return
+              }
+            }
+
+            // Check name pattern
+            if (namePattern) {
+              const fileName = basename(path)
+              const pattern = namePattern
+                .replace(/\./g, '\\.')
+                .replace(/\*/g, '.*')
+                .replace(/\?/g, '.')
+              const regex = new RegExp(`^${pattern}$`)
+              
+              if (regex.test(fileName)) {
+                results.push(path)
+              }
+            } else {
+              // No name filter, add all matching items
+              results.push(path)
+            }
+
+            // Recurse into directories
+            if (stat.isDirectory()) {
+              try {
+                const entries = fs.readdir(path)
+                for (const entry of entries) {
+                  const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`
+                  try {
+                    search(fullPath, depth + 1)
+                  } catch (e) {
+                    // Permission denied or other error, skip this entry
+                  }
+                }
+              } catch (e) {
+                // Can't read directory, skip
+              }
+            }
+          } catch (e) {
+            // Permission denied or other error, skip this path
+          }
+        }
+
+        search(searchPath)
+
+        return { 
+          stdout: results.join('\n'), 
+          stderr: '', 
+          exitCode: results.length > 0 ? 0 : 1 
+        }
+      }
+
       case 'clear':
         return { stdout: '\x1b[2J\x1b[H', stderr: '', exitCode: 0 }
 
@@ -632,4 +776,31 @@ export function executeCommand(
       exitCode: 1,
     }
   }
+}
+
+/**
+ * Execute a command with sudo privileges after password verification
+ */
+export function executeSudoCommand(
+  command: string,
+  password: string,
+  context: ExecutionContext,
+  fs: MEMFS
+): CommandResult {
+  const correctPassword = 'P@ssw0rd!'
+  
+  if (password !== correctPassword) {
+    return {
+      stdout: '',
+      stderr: 'sudo: 3 incorrect password attempts',
+      exitCode: 1,
+    }
+  }
+  
+  // Execute with sudo privileges
+  return executeCommand(
+    command,
+    { ...context, isSudo: true },
+    fs
+  )
 }

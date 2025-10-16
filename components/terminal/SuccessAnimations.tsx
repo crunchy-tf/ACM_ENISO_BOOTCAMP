@@ -95,49 +95,68 @@ export function SuccessAnimation({
 
   const colors = getColorScheme()
 
+  const handleDismiss = () => {
+    setIsAnimating(false)
+    setTimeout(() => {
+      onComplete?.()
+    }, 500)
+  }
+
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-all duration-500",
-        isAnimating ? "opacity-100" : "opacity-0"
-      )}
-    >
-      {/* Backdrop */}
-      <div className={cn(
-        "absolute inset-0 bg-black/40 backdrop-blur-sm transition-all duration-500",
-        isAnimating ? "opacity-100" : "opacity-0"
-      )} />
-
-      {/* Confetti */}
-      {confetti.map((piece) => (
-        <div
-          key={piece.id}
-          className="absolute pointer-events-none"
-          style={{
-            left: `${piece.x}%`,
-            top: `${piece.y}%`,
-            animation: `confetti-fall ${2 + Math.random()}s ease-in forwards`,
-            animationDelay: `${piece.delay}ms`,
-          }}
-        >
-          <div
-            className="w-3 h-3 rounded-sm opacity-80"
-            style={{
-              backgroundColor: piece.color,
-              transform: `rotate(${piece.rotation}deg)`,
-              animation: 'confetti-spin 1s linear infinite'
-            }}
-          />
-        </div>
-      ))}
-
-      {/* Success Card */}
+    <>
+      {/* Backdrop with blur - separate layer */}
       <div
         className={cn(
-          "relative pointer-events-auto max-w-md w-full mx-4 transform transition-all duration-700",
-          isAnimating ? "scale-100 translate-y-0" : "scale-75 translate-y-8"
+          "fixed inset-0 z-[120] bg-black/70 backdrop-blur-lg transition-all duration-500",
+          isAnimating ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={handleDismiss}
+      />
+
+      {/* Success animation container */}
+      <div
+        className={cn(
+          "fixed inset-0 z-[121] flex items-center justify-center pointer-events-none transition-all duration-500",
+          isAnimating ? "opacity-100" : "opacity-0"
         )}
       >
+        {/* Confetti */}
+        {confetti.map((piece) => (
+          <div
+            key={piece.id}
+            className="absolute pointer-events-none z-[122]"
+            style={{
+              left: `${piece.x}%`,
+              top: `${piece.y}%`,
+              animationName: 'confetti-fall',
+              animationDuration: `${2 + Math.random()}s`,
+              animationTimingFunction: 'ease-in',
+              animationFillMode: 'forwards',
+              animationDelay: `${piece.delay}ms`,
+            }}
+          >
+            <div
+              className="w-3 h-3 rounded-sm opacity-80"
+              style={{
+                backgroundColor: piece.color,
+                transform: `rotate(${piece.rotation}deg)`,
+                animationName: 'confetti-spin',
+                animationDuration: '1s',
+                animationTimingFunction: 'linear',
+                animationIterationCount: 'infinite'
+              }}
+            />
+          </div>
+        ))}
+
+        {/* Success Card */}
+        <div
+          className={cn(
+            "relative z-[123] max-w-md w-full mx-4 transform transition-all duration-700 cursor-pointer pointer-events-auto",
+            isAnimating ? "scale-100 translate-y-0" : "scale-75 translate-y-8"
+          )}
+          onClick={handleDismiss}
+        >
         <div className={cn(
           "relative bg-gradient-to-br border-2 rounded-2xl overflow-hidden",
           "shadow-2xl backdrop-blur-md",
@@ -199,7 +218,7 @@ export function SuccessAnimation({
               </div>
               
               {subtitle && (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-slate-300">
                   {subtitle}
                 </p>
               )}
@@ -236,6 +255,16 @@ export function SuccessAnimation({
                 </div>
               </div>
             )}
+
+            {/* Dismiss hint */}
+            <div className={cn(
+              "mt-6 text-center transition-all duration-700 delay-1500",
+              isAnimating ? "opacity-100" : "opacity-0"
+            )}>
+              <p className="text-xs text-slate-300 animate-pulse">
+                Click anywhere to continue
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -262,5 +291,6 @@ export function SuccessAnimation({
         }
       `}</style>
     </div>
+    </>
   )
 }

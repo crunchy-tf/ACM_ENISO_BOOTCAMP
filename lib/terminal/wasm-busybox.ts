@@ -4,7 +4,7 @@
  */
 
 import { MEMFS } from './memfs'
-import { executeCommand } from './command-executor'
+import { executeCommand, executeSudoCommand } from './command-executor'
 
 export interface ExecutionContext {
   currentPath: string
@@ -16,6 +16,8 @@ export interface CommandResult {
   stdout: string
   stderr: string
   exitCode: number
+  requiresPassword?: boolean
+  pendingCommand?: string
 }
 
 /**
@@ -113,6 +115,8 @@ export class BusyBoxWASM {
         stdout: result.stdout,
         stderr: result.stderr,
         exitCode: result.exitCode,
+        requiresPassword: result.requiresPassword,
+        pendingCommand: result.pendingCommand,
       }
     } catch (error) {
       return {
@@ -142,6 +146,40 @@ export class BusyBoxWASM {
    */
   getContext(): ExecutionContext {
     return { ...this.context }
+  }
+
+  /**
+   * Execute a sudo command with password verification
+   */
+  async executeSudo(command: string, password: string): Promise<CommandResult> {
+    if (!this.loaded) {
+      return {
+        stdout: '',
+        stderr: 'BusyBox not loaded',
+        exitCode: 1,
+      }
+    }
+
+    try {
+      const result = executeSudoCommand(command, password, this.context, this.fs)
+      
+      // Update context if command modified it
+      if (result.newPath) {
+        this.context.currentPath = result.newPath
+      }
+      
+      return {
+        stdout: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.exitCode,
+      }
+    } catch (error) {
+      return {
+        stdout: '',
+        stderr: error instanceof Error ? error.message : String(error),
+        exitCode: 1,
+      }
+    }
   }
 
   /**

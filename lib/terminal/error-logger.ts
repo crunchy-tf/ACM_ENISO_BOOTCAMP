@@ -11,9 +11,16 @@ export enum ErrorType {
   INITIALIZATION = 'INITIALIZATION',
 }
 
+export enum ErrorSeverity {
+  INFO = 'INFO',       // Informational, expected behavior (e.g., permission denied)
+  WARNING = 'WARNING', // Unexpected but handled
+  ERROR = 'ERROR',     // Critical errors
+}
+
 export interface ErrorLog {
   timestamp: number
   type: ErrorType
+  severity: ErrorSeverity
   message: string
   context?: Record<string, any>
   stack?: string
@@ -27,10 +34,17 @@ class ErrorLogger {
   /**
    * Log an error
    */
-  log(type: ErrorType, message: string, context?: Record<string, any>, error?: Error): void {
+  log(
+    type: ErrorType,
+    message: string,
+    context?: Record<string, any>,
+    error?: Error,
+    severity: ErrorSeverity = ErrorSeverity.ERROR
+  ): void {
     const log: ErrorLog = {
       timestamp: Date.now(),
       type,
+      severity,
       message,
       context,
       stack: error?.stack,
@@ -46,19 +60,40 @@ class ErrorLogger {
     // Console output with color coding (only in browser)
     if (typeof window !== 'undefined') {
       const color = this.getColorForType(type)
-      console.error(
-        `%c[${type}] ${message}`,
-        `color: ${color}; font-weight: bold`,
-        context || ''
+      const consoleMethod = this.getConsoleMethod(severity)
+      
+      consoleMethod(
+        `%c[${severity}] [${type}] ${message}`,
+        `color: ${color}; font-weight: bold`
       )
       
+      if (context && Object.keys(context).length > 0) {
+        consoleMethod('Context:', context)
+      }
+      
       if (error?.stack) {
-        console.error(error.stack)
+        consoleMethod(error.stack)
       }
     }
 
     // Notify listeners
     this.listeners.forEach(listener => listener(log))
+  }
+
+  /**
+   * Get console method based on severity
+   */
+  private getConsoleMethod(severity: ErrorSeverity): (...args: any[]) => void {
+    switch (severity) {
+      case ErrorSeverity.INFO:
+        return console.log
+      case ErrorSeverity.WARNING:
+        return console.warn
+      case ErrorSeverity.ERROR:
+        return console.error
+      default:
+        return console.log
+    }
   }
 
   /**

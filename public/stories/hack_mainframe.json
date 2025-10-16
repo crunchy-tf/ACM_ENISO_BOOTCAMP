@@ -288,7 +288,7 @@
           ],
           "outputPattern": "ORION-ALPHA-9X7|CLEARANCE_CODE",
           "outputCheck": "contains",
-          "outputCheckParams": "SECURITY_TOKEN"
+          "outputCheckParams": "CLEARANCE_CODE"
         }
       ],
       "onComplete": "✅ Mission 2 Complete! Clearance code acquired! Agent Kira: 'Perfect. You now have the security credentials. Time to navigate the filesystem.'"

@@ -59,44 +59,44 @@ export function MissionOverlay({
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="w-full lg:w-96 bg-gradient-to-b from-slate-900/95 to-slate-950/95 backdrop-blur-sm border border-cyan-500/30 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.3)] overflow-hidden"
+      className="h-full flex flex-col bg-gradient-to-b from-slate-900/98 to-blue-950/98"
     >
       <div
-        className={`p-4 bg-gradient-to-r ${actInfo.color} cursor-pointer`}
+        className={`flex-shrink-0 p-5 sm:p-6 bg-gradient-to-r ${actInfo.color} cursor-pointer hover:opacity-95 transition-all duration-200 shadow-lg`}
         onClick={() => setExpanded(!expanded)}
       >
         {/* Act Badge */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg">{actInfo.icon}</span>
-          <Badge variant="secondary" className="bg-white/20 text-white text-xs font-mono">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-2xl sm:text-3xl" role="img" aria-label={actInfo.name}>{actInfo.icon}</span>
+          <Badge variant="secondary" className="bg-white/25 text-white text-xs font-mono backdrop-blur-sm font-semibold px-3 py-1">
             {actInfo.name}
           </Badge>
         </div>
 
         {/* Mission Title */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Target className="w-5 h-5 text-white" />
-            <div>
-              <div className="text-xs text-white/80 font-mono mb-0.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Target className="w-6 h-6 text-white flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-white/95 font-mono mb-1 tracking-wider font-semibold">
                 MISSION #{missionNumber.toString().padStart(2, '0')}
               </div>
-              <h3 className="font-bold text-white text-lg leading-tight">{mission.title}</h3>
-              <p className="text-xs text-cyan-100 mt-1">
+              <h3 className="font-bold text-white text-lg sm:text-xl leading-tight">{mission.title}</h3>
+              <p className="text-sm sm:text-base text-white/95 mt-2 font-semibold">
                 {completedCount}/{totalCount} objectives complete
               </p>
             </div>
           </div>
           {isMissionComplete && (
-            <CheckCircle2 className="w-6 h-6 text-white animate-pulse" />
+            <CheckCircle2 className="w-7 h-7 text-white animate-pulse flex-shrink-0 drop-shadow-lg" />
           )}
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-3">
+        <div className="mt-4">
           <Progress 
             value={(completedCount / totalCount) * 100} 
-            className="h-2 bg-white/20"
+            className="h-3 bg-white/25 shadow-inner"
           />
         </div>
       </div>
@@ -108,18 +108,19 @@ export function MissionOverlay({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="flex-1 overflow-y-auto overflow-x-hidden mission-overlay-scroll"
           >
-            <div className="p-4 space-y-4">
+            <div className="p-5 sm:p-6 space-y-5">
               {/* Mission Story */}
-              <Card className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 border-cyan-500/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs flex items-center gap-2 text-cyan-400 uppercase tracking-wide">
-                    <Book className="w-3 h-3" />
+              <Card className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-cyan-400/40 shadow-xl shadow-cyan-500/10">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2 text-cyan-200 uppercase tracking-wider font-bold">
+                    <Book className="w-5 h-5" />
                     Mission Briefing
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-200 leading-relaxed border-l-2 border-cyan-500/50 pl-3">
+                  <p className="text-base sm:text-lg text-slate-50 leading-relaxed border-l-3 border-cyan-400/70 pl-4 py-2 font-medium">
                     {mission.story}
                   </p>
                 </CardContent>
@@ -132,15 +133,15 @@ export function MissionOverlay({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-cyan-950/30 to-blue-950/30 border-2 border-cyan-500/50 shadow-lg shadow-cyan-500/10">
+                  <Card className="bg-gradient-to-br from-cyan-950/60 to-blue-950/60 border-2 border-cyan-300/70 shadow-2xl shadow-cyan-400/30">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2 text-cyan-300">
-                        <Sparkles className="w-4 h-4 animate-pulse" />
+                      <CardTitle className="text-base flex items-center gap-2 text-cyan-200 font-bold">
+                        <Sparkles className="w-5 h-5 animate-pulse text-yellow-300" />
                         Current Objective
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-white font-medium mb-3 leading-relaxed">
+                      <p className="text-base sm:text-lg text-white font-semibold mb-5 leading-relaxed">
                         {currentTask.description}
                       </p>
                       <TaskHints
@@ -154,20 +155,20 @@ export function MissionOverlay({
               )}
 
               {/* Task List */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Objectives ({completedCount}/{totalCount})
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h4 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+                    All Objectives
                   </h4>
                   <Badge 
                     variant="outline" 
-                    className="text-xs border-cyan-500/30 text-cyan-400"
+                    className="text-xs border-cyan-400/50 text-cyan-200 bg-cyan-500/20 font-semibold"
                   >
-                    {Math.round((completedCount / totalCount) * 100)}%
+                    {completedCount}/{totalCount} • {Math.round((completedCount / totalCount) * 100)}%
                   </Badge>
                 </div>
                 
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   {mission.tasks.map((task, index) => {
                     const isComplete = completedTasks.has(task.id)
                     const isCurrent = index === currentTaskIndex
@@ -177,30 +178,30 @@ export function MissionOverlay({
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className={`flex items-start gap-2 p-2.5 rounded-md transition-all ${
+                        className={`flex items-start gap-3 p-4 rounded-lg transition-all duration-200 ${
                           isCurrent
-                            ? "bg-cyan-500/10 border border-cyan-500/40 shadow-sm shadow-cyan-500/20"
+                            ? "bg-cyan-500/25 border-2 border-cyan-300/60 shadow-lg shadow-cyan-500/20"
                             : isComplete
-                            ? "bg-green-500/10 border border-green-500/20"
-                            : "bg-slate-800/30 border border-transparent hover:border-slate-700/50"
+                            ? "bg-green-500/20 border-2 border-green-400/50 shadow-md"
+                            : "bg-slate-800/60 border-2 border-slate-600/50 hover:border-slate-500/70 hover:bg-slate-700/60"
                         }`}
                       >
                         {isComplete ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-300 flex-shrink-0 mt-0.5 drop-shadow-lg" />
                         ) : (
                           <Circle
-                            className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
-                              isCurrent ? "text-cyan-400 animate-pulse" : "text-slate-600"
+                            className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 ${
+                              isCurrent ? "text-cyan-300 animate-pulse" : "text-slate-400"
                             }`}
                           />
                         )}
                         <span
-                          className={`text-xs leading-relaxed ${
+                          className={`text-sm sm:text-base leading-relaxed font-medium ${
                             isComplete
-                              ? "text-slate-400 line-through"
+                              ? "text-slate-300 line-through"
                               : isCurrent
-                              ? "text-cyan-100 font-medium"
-                              : "text-slate-400"
+                              ? "text-white font-semibold"
+                              : "text-slate-200"
                           }`}
                         >
                           {task.description}
@@ -245,15 +246,15 @@ function TaskHints({ task, hintsUsed, onHintRequest }: TaskHintsProps) {
   const currentHint = task.hints.find((h) => h.level === currentHintLevel)
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {currentHintLevel < 3 && (
         <Button
           size="sm"
           variant="outline"
           onClick={handleHintClick}
-          className="w-full bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
+          className="w-full bg-amber-400/20 border-amber-400/50 text-amber-100 hover:bg-amber-400/30 hover:border-amber-300/70 hover:text-white transition-all duration-200 font-semibold py-5"
         >
-          <HelpCircle className="w-4 h-4 mr-2" />
+          <HelpCircle className="w-5 h-5 mr-2" />
           Get {getHintLabel(currentHintLevel + 1)} ({3 - currentHintLevel} remaining)
         </Button>
       )}
@@ -262,18 +263,24 @@ function TaskHints({ task, hintsUsed, onHintRequest }: TaskHintsProps) {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md"
+          className="p-5 bg-amber-400/20 border-2 border-amber-300/50 rounded-lg shadow-lg shadow-amber-500/20"
         >
-          <div className="flex items-start gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-amber-400 mb-1">
+          <div className="flex items-start gap-3">
+            <Lightbulb className="w-6 h-6 text-amber-200 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-amber-100 mb-2 uppercase tracking-wider">
                 {getHintLabel(currentHintLevel)}
               </p>
-              <p className="text-sm text-amber-100">{currentHint.text}</p>
+              <p className="text-sm sm:text-base text-white leading-relaxed font-medium">{currentHint.text}</p>
             </div>
           </div>
         </motion.div>
+      )}
+      
+      {currentHintLevel === 3 && (
+        <div className="text-sm text-slate-300 text-center py-2 font-medium">
+          All hints used for this objective
+        </div>
       )}
     </div>
   )

@@ -35,7 +35,6 @@ An interactive terminal-based adventure game built with Next.js, xterm.js, and W
 - **47 Validators**: Output, filesystem, and advanced validation
 - **Destructive Command Detection**: 3-level warning system (warning/danger/critical)
 - **Error Recovery**: Contextual suggestions for 13+ error patterns
-- **Success Animations**: Confetti effects for task/mission completion
 - **Safer Alternatives**: Auto-suggest less destructive commands
 
 ## 🚀 Quick Start
@@ -80,7 +79,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Adventures
 - **Hack the Mainframe**: 16 missions, cybersecurity theme
-- **Time Traveler**: Coming soon
 
 ### Mission Categories
 1. **Basics (Missions 1-3)**: Navigation, file operations, permissions
@@ -304,7 +302,7 @@ export const validationRegistry: Record<string, OutputValidator> = {
 - [ ] Command history search (Ctrl+R)
 - [ ] Achievement system
 - [ ] Leaderboards
-- [ ] More adventures (Time Traveler)
+- [ ] More adventures
 - [ ] Multiplayer mode
 - [ ] AI-powered hints
 

@@ -15,6 +15,7 @@ export interface InterceptResult {
   modalType?: 'less' | 'ssh' | 'nano'
   modalData?: Record<string, any>
   newContext?: Partial<ExecutionContext>
+  actualCommand?: string // For commands like sudo that need to pass through a modified command
 }
 
 export interface ExecutionContext {
@@ -55,7 +56,6 @@ export class CommandInterceptor {
   shouldIntercept(command: string): boolean {
     const cmd = this.parseCommand(command)
     const interceptedCommands = [
-      'sudo',
       'ssh',
       'scp',
       'less',
@@ -72,11 +72,9 @@ export class CommandInterceptor {
       return true
     }
 
-    // Check for sudo prefix
-    if (cmd.base === 'sudo' || command.trim().startsWith('sudo ')) {
-      return true
-    }
-
+    // Don't intercept sudo - let it go to command executor for password prompt
+    // The command executor will handle password authentication
+    
     return false
   }
 
@@ -86,10 +84,7 @@ export class CommandInterceptor {
   async intercept(command: string): Promise<InterceptResult> {
     const cmd = this.parseCommand(command)
 
-    // Handle sudo
-    if (cmd.base === 'sudo' || command.trim().startsWith('sudo ')) {
-      return this.handleSudo(command)
-    }
+    // Note: sudo is not intercepted anymore - it goes to command executor for password prompt
 
     // Handle SSH
     if (cmd.base === 'ssh') {
@@ -137,21 +132,11 @@ export class CommandInterceptor {
       }
     }
 
-    // Set sudo flag in context
-    const newContext: Partial<ExecutionContext> = {
-      isSudo: true,
-    }
-
-    if (this.onContextChange) {
-      this.onContextChange(newContext)
-    }
-
+    // Instead of setting sudo context directly, let the command executor handle password prompt
+    // Return false for intercepted so it goes through the normal execution path
     return {
-      intercepted: true,
-      handled: false, // Let the actual command execute with sudo context
-      action: 'executeCommand',
-      newContext,
-      output: '', // Silent - just sets context
+      intercepted: false,
+      handled: false,
     }
   }
 

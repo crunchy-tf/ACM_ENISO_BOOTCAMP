@@ -98,20 +98,6 @@ export class TerminalFormatter {
   }
 
   /**
-   * Format task completion
-   */
-  static taskComplete(taskDescription: string): string {
-    return `\n${TerminalColors.SUCCESS}${TerminalIcons.CHECKMARK} Task Complete: ${taskDescription}${TerminalColors.RESET}\n`
-  }
-
-  /**
-   * Format mission complete
-   */
-  static missionComplete(missionTitle: string, taskCount: number): string {
-    return `\n${TerminalColors.SUCCESS}${TerminalColors.BOLD}${TerminalIcons.STAR}  MISSION COMPLETE: ${missionTitle}${TerminalColors.RESET}\n${TerminalColors.INFO}   ${taskCount} tasks completed${TerminalColors.RESET}\n`
-  }
-
-  /**
    * Format hint message
    */
   static hint(hintText: string, level: number): string {
