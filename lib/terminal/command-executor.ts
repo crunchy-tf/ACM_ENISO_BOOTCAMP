@@ -103,6 +103,83 @@ function basename(path: string): string {
 }
 
 /**
+ * Parse flags and arguments from command arguments
+ * Returns flags as a Set and non-flag arguments as an array
+ */
+interface ParsedArgs {
+  flags: Set<string>
+  args: string[]
+  namedArgs: Map<string, string> // For args like -n 10, --name value
+}
+
+function parseArgs(args: string[], namedOptions: string[] = []): ParsedArgs {
+  const flags = new Set<string>()
+  const nonFlagArgs: string[] = []
+  const namedArgs = new Map<string, string>()
+  
+  let i = 0
+  while (i < args.length) {
+    const arg = args[i]
+    
+    if (arg.startsWith('--')) {
+      // Long option like --name
+      const optName = arg.substring(2)
+      const nextArg = i + 1 < args.length ? args[i + 1] : null
+      if (nextArg && !nextArg.startsWith('-')) {
+        namedArgs.set(optName, nextArg)
+        i += 2
+      } else {
+        flags.add(optName)
+        i++
+      }
+    } else if (arg.startsWith('-') && arg.length > 1) {
+      // Check if this is a named option that expects a value
+      const firstChar = arg.substring(1)
+      
+      // Check if it's a number like -10 or -20 (for head/tail)
+      const numValue = parseInt(firstChar)
+      if (!isNaN(numValue) && firstChar === numValue.toString()) {
+        // It's a numeric flag like -10
+        flags.add(firstChar)
+        i++
+        continue
+      }
+      
+      // Check if it's in the named options list (e.g., 'n', 'name', 'type')
+      if (namedOptions.includes(firstChar) && i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        namedArgs.set(firstChar, args[i + 1])
+        i += 2
+        continue
+      }
+      
+      // For single-char flags followed by a value (could be either flag or named arg)
+      if (arg.length === 2 && i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        // If next arg looks like a value, treat as named arg
+        // Otherwise, treat as flag
+        const nextArg = args[i + 1]
+        if (namedOptions.includes(firstChar) || /^\d+$/.test(nextArg)) {
+          namedArgs.set(firstChar, nextArg)
+          i += 2
+          continue
+        }
+      }
+      
+      // Short flags like -rf or -la
+      for (let j = 1; j < arg.length; j++) {
+        flags.add(arg[j])
+      }
+      i++
+    } else {
+      // Not a flag, regular argument
+      nonFlagArgs.push(arg)
+      i++
+    }
+  }
+  
+  return { flags, args: nonFlagArgs, namedArgs }
+}
+
+/**
  * Format file permissions for ls -l
  */
 function formatPermissions(mode: number, isDir: boolean): string {
@@ -192,23 +269,10 @@ export function executeCommand(
       }
 
       case 'ls': {
-        let longFormat = false
-        let showAll = false
-        const paths: string[] = []
-
-        // Parse flags and paths
-        for (const arg of args) {
-          if (arg.startsWith('-')) {
-            if (arg.includes('l')) longFormat = true
-            if (arg.includes('a')) showAll = true
-          } else {
-            paths.push(arg)
-          }
-        }
-
-        if (paths.length === 0) {
-          paths.push(currentPath)
-        }
+        const parsed = parseArgs(args)
+        const longFormat = parsed.flags.has('l')
+        const showAll = parsed.flags.has('a') || parsed.flags.has('A')
+        const paths = parsed.args.length > 0 ? parsed.args : [currentPath]
 
         const output: string[] = []
 
@@ -325,31 +389,18 @@ export function executeCommand(
           return { stdout: '', stderr: 'grep: missing operand', exitCode: 2 }
         }
 
-        let pattern = ''
-        let files: string[] = []
-        let recursive = false
-        let ignoreCase = false
-        let invertMatch = false
-        let lineNumber = false
-
-        // Parse flags and arguments
-        for (let i = 0; i < args.length; i++) {
-          const arg = args[i]
-          if (arg.startsWith('-')) {
-            if (arg.includes('r') || arg.includes('R')) recursive = true
-            if (arg.includes('i')) ignoreCase = true
-            if (arg.includes('v')) invertMatch = true
-            if (arg.includes('n')) lineNumber = true
-          } else if (!pattern) {
-            pattern = arg
-          } else {
-            files.push(arg)
-          }
-        }
-
-        if (!pattern) {
+        const parsed = parseArgs(args)
+        const recursive = parsed.flags.has('r') || parsed.flags.has('R')
+        const ignoreCase = parsed.flags.has('i')
+        const invertMatch = parsed.flags.has('v')
+        const lineNumber = parsed.flags.has('n')
+        
+        if (parsed.args.length === 0) {
           return { stdout: '', stderr: 'grep: missing pattern', exitCode: 2 }
         }
+        
+        const pattern = parsed.args[0]
+        let files = parsed.args.slice(1)
 
         // If no files specified and not recursive, read from stdin (not supported here)
         if (files.length === 0 && !recursive) {
@@ -432,15 +483,34 @@ export function executeCommand(
           return { stdout: '', stderr: 'mkdir: missing operand', exitCode: 1 }
         }
 
-        for (const arg of args) {
-          const fullPath = resolvePath(currentPath, arg, username)
+        const parsed = parseArgs(args)
+        const parents = parsed.flags.has('p')
+        
+        if (parsed.args.length === 0) {
+          return { stdout: '', stderr: 'mkdir: missing operand', exitCode: 1 }
+        }
+
+        for (const dir of parsed.args) {
+          const fullPath = resolvePath(currentPath, dir, username)
 
           try {
-            fs.mkdir(fullPath)
+            if (parents) {
+              // Create parent directories if needed
+              const parts = fullPath.split('/').filter(Boolean)
+              let currentDir = '/'
+              for (const part of parts) {
+                currentDir = `${currentDir}${part}/`.replace(/\/+/g, '/')
+                if (!fs.exists(currentDir)) {
+                  fs.mkdir(currentDir)
+                }
+              }
+            } else {
+              fs.mkdir(fullPath)
+            }
           } catch (e) {
             return {
               stdout: '',
-              stderr: `mkdir: cannot create directory '${arg}': ${e instanceof Error ? e.message : 'Error'}`,
+              stderr: `mkdir: cannot create directory '${dir}': ${e instanceof Error ? e.message : 'Error'}`,
               exitCode: 1,
             }
           }
@@ -490,24 +560,76 @@ export function executeCommand(
           return { stdout: '', stderr: 'rm: missing operand', exitCode: 1 }
         }
 
-        for (const arg of args) {
-          const fullPath = resolvePath(currentPath, arg, username)
+        const parsed = parseArgs(args)
+        const recursive = parsed.flags.has('r') || parsed.flags.has('R')
+        const force = parsed.flags.has('f')
+        
+        if (parsed.args.length === 0) {
+          return { stdout: '', stderr: 'rm: missing operand', exitCode: 1 }
+        }
+
+        for (const target of parsed.args) {
+          const fullPath = resolvePath(currentPath, target, username)
 
           try {
+            if (!fs.exists(fullPath)) {
+              if (!force) {
+                return {
+                  stdout: '',
+                  stderr: `rm: cannot remove '${target}': No such file or directory`,
+                  exitCode: 1,
+                }
+              }
+              continue
+            }
+            
             const stat = fs.stat(fullPath)
+            
             if (stat.isDirectory()) {
-              return {
-                stdout: '',
-                stderr: `rm: cannot remove '${arg}': Is a directory`,
-                exitCode: 1,
+              if (!recursive) {
+                return {
+                  stdout: '',
+                  stderr: `rm: cannot remove '${target}': Is a directory`,
+                  exitCode: 1,
+                }
+              }
+              // Recursive directory removal
+              const removeDir = (dirPath: string) => {
+                const entries = fs.readdir(dirPath)
+                for (const entry of entries) {
+                  const entryPath = dirPath === '/' ? `/${entry}` : `${dirPath}/${entry}`
+                  const entryStat = fs.stat(entryPath)
+                  
+                  if (entryStat.isDirectory()) {
+                    removeDir(entryPath)
+                  } else {
+                    fs.unlink(entryPath)
+                  }
+                }
+                fs.rmdir(dirPath)
+              }
+              
+              removeDir(fullPath)
+              
+              // Verify removal succeeded
+              if (fs.exists(fullPath)) {
+                throw new Error('Failed to remove directory')
+              }
+            } else {
+              fs.unlink(fullPath)
+              
+              // Verify removal succeeded
+              if (fs.exists(fullPath)) {
+                throw new Error('Failed to remove file')
               }
             }
-            fs.unlink(fullPath)
           } catch (e) {
-            return {
-              stdout: '',
-              stderr: `rm: cannot remove '${arg}': ${e instanceof Error ? e.message : 'Error'}`,
-              exitCode: 1,
+            if (!force) {
+              return {
+                stdout: '',
+                stderr: `rm: cannot remove '${target}': ${e instanceof Error ? e.message : 'Error'}`,
+                exitCode: 1,
+              }
             }
           }
         }
@@ -520,15 +642,39 @@ export function executeCommand(
           return { stdout: '', stderr: 'rmdir: missing operand', exitCode: 1 }
         }
 
-        for (const arg of args) {
-          const fullPath = resolvePath(currentPath, arg, username)
+        const parsed = parseArgs(args)
+        const parents = parsed.flags.has('p')
+        
+        if (parsed.args.length === 0) {
+          return { stdout: '', stderr: 'rmdir: missing operand', exitCode: 1 }
+        }
+
+        for (const target of parsed.args) {
+          const fullPath = resolvePath(currentPath, target, username)
 
           try {
+            if (!fs.exists(fullPath)) {
+              return {
+                stdout: '',
+                stderr: `rmdir: failed to remove '${target}': No such file or directory`,
+                exitCode: 1,
+              }
+            }
+            
+            const stat = fs.stat(fullPath)
+            if (!stat.isDirectory()) {
+              return {
+                stdout: '',
+                stderr: `rmdir: failed to remove '${target}': Not a directory`,
+                exitCode: 1,
+              }
+            }
+            
             fs.rmdir(fullPath)
           } catch (e) {
             return {
               stdout: '',
-              stderr: `rmdir: failed to remove '${arg}': ${e instanceof Error ? e.message : 'Error'}`,
+              stderr: `rmdir: failed to remove '${target}': ${e instanceof Error ? e.message : 'Error'}`,
               exitCode: 1,
             }
           }
@@ -542,43 +688,81 @@ export function executeCommand(
           return { stdout: '', stderr: 'cp: missing file operand', exitCode: 1 }
         }
 
-        const source = resolvePath(currentPath, args[0], username)
-        let dest = resolvePath(currentPath, args[1], username)
+        const parsed = parseArgs(args)
+        const recursive = parsed.flags.has('r') || parsed.flags.has('R')
+        
+        if (parsed.args.length < 2) {
+          return { stdout: '', stderr: 'cp: missing destination file operand', exitCode: 1 }
+        }
 
-        try {
-          if (!fs.exists(source)) {
+        const sources = parsed.args.slice(0, -1)
+        let dest = resolvePath(currentPath, parsed.args[parsed.args.length - 1], username)
+
+        for (const src of sources) {
+          const source = resolvePath(currentPath, src, username)
+
+          try {
+            if (!fs.exists(source)) {
+              return {
+                stdout: '',
+                stderr: `cp: cannot stat '${src}': No such file or directory`,
+                exitCode: 1,
+              }
+            }
+
+            const sourceStat = fs.stat(source)
+            
+            if (sourceStat.isDirectory() && !recursive) {
+              return {
+                stdout: '',
+                stderr: `cp: -r not specified; omitting directory '${src}'`,
+                exitCode: 1,
+              }
+            }
+
+            // If destination is a directory, append the source filename
+            let targetPath = dest
+            if (fs.exists(dest)) {
+              const destStat = fs.stat(dest)
+              if (destStat.isDirectory()) {
+                const sourceFilename = basename(source)
+                targetPath = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
+              }
+            }
+
+            if (sourceStat.isDirectory()) {
+              // Recursive copy - simplified version
+              const copyDir = (srcPath: string, dstPath: string) => {
+                if (!fs.exists(dstPath)) {
+                  fs.mkdir(dstPath)
+                }
+                
+                const entries = fs.readdir(srcPath)
+                for (const entry of entries) {
+                  const srcEntry = srcPath === '/' ? `/${entry}` : `${srcPath}/${entry}`
+                  const dstEntry = dstPath === '/' ? `/${entry}` : `${dstPath}/${entry}`
+                  
+                  const entryStat = fs.stat(srcEntry)
+                  if (entryStat.isDirectory()) {
+                    copyDir(srcEntry, dstEntry)
+                  } else {
+                    const content = fs.readFile(srcEntry) as Uint8Array
+                    fs.writeFile(dstEntry, content)
+                  }
+                }
+              }
+              
+              copyDir(source, targetPath)
+            } else {
+              const content = fs.readFile(source) as Uint8Array
+              fs.writeFile(targetPath, content)
+            }
+          } catch (e) {
             return {
               stdout: '',
-              stderr: `cp: cannot stat '${args[0]}': No such file or directory`,
+              stderr: `cp: ${e instanceof Error ? e.message : 'Error'}`,
               exitCode: 1,
             }
-          }
-
-          const sourceStat = fs.stat(source)
-          if (sourceStat.isDirectory()) {
-            return {
-              stdout: '',
-              stderr: `cp: omitting directory '${args[0]}'`,
-              exitCode: 1,
-            }
-          }
-
-          // If destination is a directory, append the source filename
-          if (fs.exists(dest)) {
-            const destStat = fs.stat(dest)
-            if (destStat.isDirectory()) {
-              const sourceFilename = basename(source)
-              dest = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
-            }
-          }
-
-          const content = fs.readFile(source) as Uint8Array
-          fs.writeFile(dest, content)
-        } catch (e) {
-          return {
-            stdout: '',
-            stderr: `cp: ${e instanceof Error ? e.message : 'Error'}`,
-            exitCode: 1,
           }
         }
 
@@ -590,25 +774,50 @@ export function executeCommand(
           return { stdout: '', stderr: 'mv: missing file operand', exitCode: 1 }
         }
 
-        const source = resolvePath(currentPath, args[0], username)
-        let dest = resolvePath(currentPath, args[1], username)
+        const parsed = parseArgs(args)
+        const force = parsed.flags.has('f')
+        
+        if (parsed.args.length < 2) {
+          return { stdout: '', stderr: 'mv: missing destination file operand', exitCode: 1 }
+        }
 
-        try {
-          // If destination is a directory, append the source filename
-          if (fs.exists(dest)) {
-            const destStat = fs.stat(dest)
-            if (destStat.isDirectory()) {
-              const sourceFilename = basename(source)
-              dest = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
+        const sources = parsed.args.slice(0, -1)
+        let dest = resolvePath(currentPath, parsed.args[parsed.args.length - 1], username)
+
+        for (const src of sources) {
+          const source = resolvePath(currentPath, src, username)
+
+          try {
+            if (!fs.exists(source)) {
+              if (!force) {
+                return {
+                  stdout: '',
+                  stderr: `mv: cannot stat '${src}': No such file or directory`,
+                  exitCode: 1,
+                }
+              }
+              continue
             }
-          }
+            
+            // If destination is a directory, append the source filename
+            let targetPath = dest
+            if (fs.exists(dest)) {
+              const destStat = fs.stat(dest)
+              if (destStat.isDirectory()) {
+                const sourceFilename = basename(source)
+                targetPath = dest === '/' ? `/${sourceFilename}` : `${dest}/${sourceFilename}`
+              }
+            }
 
-          fs.rename(source, dest)
-        } catch (e) {
-          return {
-            stdout: '',
-            stderr: `mv: ${e instanceof Error ? e.message : 'Error'}`,
-            exitCode: 1,
+            fs.rename(source, targetPath)
+          } catch (e) {
+            if (!force) {
+              return {
+                stdout: '',
+                stderr: `mv: ${e instanceof Error ? e.message : 'Error'}`,
+                exitCode: 1,
+              }
+            }
           }
         }
 
@@ -624,33 +833,36 @@ export function executeCommand(
           return { stdout: '', stderr: 'head: missing operand', exitCode: 1 }
         }
 
+        const parsed = parseArgs(args, ['n'])
         let numLines = 10 // Default to 10 lines
-        let filePath: string | null = null
-
-        // Parse arguments
-        for (let i = 0; i < args.length; i++) {
-          const arg = args[i]
-          if (arg === '-n' && i + 1 < args.length) {
-            numLines = parseInt(args[++i])
-            if (isNaN(numLines) || numLines < 0) {
-              return {
-                stdout: '',
-                stderr: 'head: invalid number of lines',
-                exitCode: 1,
-              }
+        
+        // Check for -n flag
+        if (parsed.namedArgs.has('n')) {
+          const value = parsed.namedArgs.get('n')!
+          numLines = parseInt(value)
+          if (isNaN(numLines) || numLines < 0) {
+            return {
+              stdout: '',
+              stderr: 'head: invalid number of lines',
+              exitCode: 1,
             }
-          } else if (arg.startsWith('-') && arg.length > 1 && !isNaN(parseInt(arg.substring(1)))) {
-            // Handle -10 format
-            numLines = parseInt(arg.substring(1))
-          } else if (!arg.startsWith('-')) {
-            filePath = arg
           }
         }
-
-        if (!filePath) {
+        
+        // Check for shorthand -10 format
+        for (const flag of parsed.flags) {
+          const num = parseInt(flag)
+          if (!isNaN(num) && num > 0) {
+            numLines = num
+            break
+          }
+        }
+        
+        if (parsed.args.length === 0) {
           return { stdout: '', stderr: 'head: missing file operand', exitCode: 1 }
         }
 
+        const filePath = parsed.args[0]
         const fullPath = resolvePath(currentPath, filePath, username)
 
         if (!fs.exists(fullPath)) {
@@ -699,33 +911,36 @@ export function executeCommand(
           return { stdout: '', stderr: 'tail: missing operand', exitCode: 1 }
         }
 
+        const parsed = parseArgs(args, ['n'])
         let numLines = 10 // Default to 10 lines
-        let filePath: string | null = null
-
-        // Parse arguments
-        for (let i = 0; i < args.length; i++) {
-          const arg = args[i]
-          if (arg === '-n' && i + 1 < args.length) {
-            numLines = parseInt(args[++i])
-            if (isNaN(numLines) || numLines < 0) {
-              return {
-                stdout: '',
-                stderr: 'tail: invalid number of lines',
-                exitCode: 1,
-              }
+        
+        // Check for -n flag
+        if (parsed.namedArgs.has('n')) {
+          const value = parsed.namedArgs.get('n')!
+          numLines = parseInt(value)
+          if (isNaN(numLines) || numLines < 0) {
+            return {
+              stdout: '',
+              stderr: 'tail: invalid number of lines',
+              exitCode: 1,
             }
-          } else if (arg.startsWith('-') && arg.length > 1 && !isNaN(parseInt(arg.substring(1)))) {
-            // Handle -20 format
-            numLines = parseInt(arg.substring(1))
-          } else if (!arg.startsWith('-')) {
-            filePath = arg
           }
         }
-
-        if (!filePath) {
+        
+        // Check for shorthand -20 format
+        for (const flag of parsed.flags) {
+          const num = parseInt(flag)
+          if (!isNaN(num) && num > 0) {
+            numLines = num
+            break
+          }
+        }
+        
+        if (parsed.args.length === 0) {
           return { stdout: '', stderr: 'tail: missing file operand', exitCode: 1 }
         }
 
+        const filePath = parsed.args[0]
         const fullPath = resolvePath(currentPath, filePath, username)
 
         if (!fs.exists(fullPath)) {
@@ -775,33 +990,30 @@ export function executeCommand(
           return { stdout: '', stderr: 'find: missing operand', exitCode: 1 }
         }
 
+        const parsed = parseArgs(args, ['name', 'type', 'maxdepth', 'mindepth', 'mtime'])
         let searchPath = currentPath
         let namePattern: string | null = null
         let typeFilter: string | null = null
         let maxDepth: number | null = null
         let minDepth: number | null = null
-        let mtimeValue: number | null = null
 
-        // Parse arguments
-        for (let i = 0; i < args.length; i++) {
-          const arg = args[i]
-          
-          if (arg === '-name' && i + 1 < args.length) {
-            namePattern = args[++i]
-          } else if (arg === '-type' && i + 1 < args.length) {
-            typeFilter = args[++i]
-          } else if (arg === '-maxdepth' && i + 1 < args.length) {
-            maxDepth = parseInt(args[++i])
-          } else if (arg === '-mindepth' && i + 1 < args.length) {
-            minDepth = parseInt(args[++i])
-          } else if (arg === '-mtime' && i + 1 < args.length) {
-            mtimeValue = parseInt(args[++i])
-          } else if (!arg.startsWith('-')) {
-            // First non-flag argument is the search path
-            if (!namePattern && !typeFilter && !maxDepth) {
-              searchPath = resolvePath(currentPath, arg, username)
-            }
-          }
+        // Get named arguments
+        if (parsed.namedArgs.has('name')) {
+          namePattern = parsed.namedArgs.get('name')!
+        }
+        if (parsed.namedArgs.has('type')) {
+          typeFilter = parsed.namedArgs.get('type')!
+        }
+        if (parsed.namedArgs.has('maxdepth')) {
+          maxDepth = parseInt(parsed.namedArgs.get('maxdepth')!)
+        }
+        if (parsed.namedArgs.has('mindepth')) {
+          minDepth = parseInt(parsed.namedArgs.get('mindepth')!)
+        }
+        
+        // First non-flag argument is the search path
+        if (parsed.args.length > 0) {
+          searchPath = resolvePath(currentPath, parsed.args[0], username)
         }
 
         // Check if path exists

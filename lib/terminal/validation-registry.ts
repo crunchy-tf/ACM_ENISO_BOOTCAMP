@@ -28,6 +28,14 @@ export const validationRegistry: Record<string, OutputValidator> = {
   },
 
   /**
+   * Check if output does NOT contain specific text (case-insensitive)
+   */
+  notContains: (output, params: string | string[]) => {
+    const searches = Array.isArray(params) ? params : [params]
+    return searches.every(text => !output.toLowerCase().includes(text.toLowerCase()))
+  },
+
+  /**
    * Check output is not empty
    */
   notEmpty: (output) => {

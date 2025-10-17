@@ -1003,33 +1003,6 @@
             "path": "/home/student/temp_exfil/exfil_log.txt",
             "text": "USER="
           }
-        },
-        {
-          "id": "task_13_3",
-          "description": "Append multi-line note using heredoc (use cat <<EOF >> file)",
-          "hints": [
-            {
-              "level": 1,
-              "text": "Use a here-document to write multiple lines to a file."
-            },
-            {
-              "level": 2,
-              "text": "Syntax: cat <<EOF >> file.txt then type lines, then EOF on new line"
-            },
-            {
-              "level": 3,
-              "text": "Type: cat <<EOF >> temp_exfil/exfil_log.txt then add lines then type EOF"
-            }
-          ],
-          "outputPattern": "Mission Success|USER=",
-          "outputCheck": "fileContains",
-          "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt",
-            "text": [
-              "Mission Success",
-              "USER="
-            ]
-          }
         }
       ],
       "onComplete": "✅ Mission 13 Complete! Report finalized! Agent Kira: 'Perfect documentation. Now use nano to add your signature.'"
@@ -1039,29 +1012,30 @@
       "title": "ACT VII - Mission 14: Edit with Nano",
       "act": 7,
       "actTitle": "Finalize Report",
-      "story": "Agent Kira: 'Fine-tune the log file with the nano editor. Add your operative signature at the end.'",
+      "story": "Agent Kira: 'Fine-tune the log file with the nano editor. Add your operative signature at the end. Verify your changes with cat.'",
       "tasks": [
         {
           "id": "task_14_1",
-          "description": "Open exfil_log.txt in nano, add signature line, save and exit",
+          "description": "Use nano to edit exfil_log.txt, add your signature, save, then verify with cat",
           "hints": [
             {
               "level": 1,
-              "text": "Use nano to edit the file. Add a line like '- Operative GHOST' at the end."
+              "text": "Edit the file with nano, add a signature line like '- Operative GHOST', save (Ctrl+O), exit (Ctrl+X), then verify with cat."
             },
             {
               "level": 2,
-              "text": "In nano: Ctrl+O to save, Ctrl+X to exit."
+              "text": "Step 1: nano temp_exfil/exfil_log.txt | Step 2: Add text | Step 3: Ctrl+O to save | Step 4: Ctrl+X to exit | Step 5: cat temp_exfil/exfil_log.txt"
             },
             {
               "level": 3,
-              "text": "Type: nano temp_exfil/exfil_log.txt"
+              "text": "Type: nano temp_exfil/exfil_log.txt (add your signature, save and exit), then type: cat temp_exfil/exfil_log.txt"
             }
           ],
-          "outputPattern": "nano.*exfil_log",
-          "outputCheck": "fileExists",
+          "outputPattern": "Operative|GHOST|Agent|signature",
+          "outputCheck": "fileContains",
           "outputCheckParams": {
-            "path": "/home/student/temp_exfil/exfil_log.txt"
+            "path": "/home/student/temp_exfil/exfil_log.txt",
+            "text": "Mission Success"
           }
         }
       ],
@@ -1072,86 +1046,31 @@
       "title": "ACT VIII - Mission 15: Clean the Workspace",
       "act": 8,
       "actTitle": "Cleanup & Evasion",
-      "story": "Agent Kira: 'Remove temporary traces to reduce detection risk. A clean operative leaves no footprints.'",
+      "story": "Agent Kira: 'Remove temporary traces to reduce detection risk. A clean operative leaves no footprints. Delete the temp_exfil directory, then verify with ls that it's gone.'",
       "tasks": [
         {
           "id": "task_15_1",
-          "description": "Remove temp_exfil directory and all contents (use rm -r, confirm when prompted)",
+          "description": "Remove temp_exfil directory and verify it's gone with ls",
           "hints": [
             {
               "level": 1,
-              "text": "Use rm -r to remove a directory and all its contents. You'll get a confirmation prompt."
+              "text": "First use rm -r to remove the directory, then use ls to verify."
             },
             {
               "level": 2,
-              "text": "The -r flag means recursive (removes directories)."
+              "text": "The validation checks your ls output - the directory must be gone."
             },
             {
               "level": 3,
-              "text": "Type: rm -r temp_exfil && ls"
+              "text": "Type: rm -r temp_exfil (then press Enter)\nThen type: ls"
             }
           ],
-          "outputPattern": "(?!.*temp_exfil)|removed|deleted",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/temp_exfil"
+          "outputPattern": "README\\.md",
+          "outputCheck": "notContains",
+          "outputCheckParams": "temp_exfil"
         }
       ],
-      "onComplete": "✅ Mission 15 Complete! Workspace cleaned! Agent Kira: 'Good. Now verify the remote transfer and local cleanup.'"
-    },
-    {
-      "id": "mission_16",
-      "title": "ACT VIII - Mission 16: Final Confirmation",
-      "act": 8,
-      "actTitle": "Cleanup & Evasion",
-      "story": "Agent Kira: 'Final check. Confirm that the remote server has your evidence and that you've left no local traces. This is the moment of truth.'",
-      "tasks": [
-        {
-          "id": "task_16_1",
-          "description": "SSH to remote and verify exfil_log.txt exists in /home/omega/incoming",
-          "hints": [
-            {
-              "level": 1,
-              "text": "Connect via SSH and list the incoming directory on the remote server."
-            },
-            {
-              "level": 2,
-              "text": "First: ssh omega_agent@remote-server then: ls /home/omega/incoming"
-            },
-            {
-              "level": 3,
-              "text": "Type: ssh omega_agent@remote-server (then in remote shell: ls /home/omega/incoming)"
-            }
-          ],
-          "outputPattern": "exfil_log\\.txt",
-          "outputCheck": "remoteFileExists",
-          "outputCheckParams": {
-            "user": "omega_agent",
-            "path": "/home/omega/incoming/exfil_log.txt"
-          }
-        },
-        {
-          "id": "task_16_2",
-          "description": "Exit SSH and verify local workspace is clean (ls should not show temp_exfil)",
-          "hints": [
-            {
-              "level": 1,
-              "text": "Type 'exit' to leave the SSH session, then list your home directory."
-            },
-            {
-              "level": 2,
-              "text": "Verify temp_exfil is gone and only original files remain."
-            },
-            {
-              "level": 3,
-              "text": "Type: exit (then: cd ~ && ls -la)"
-            }
-          ],
-          "outputPattern": "(?!.*temp_exfil)",
-          "outputCheck": "fileDeleted",
-          "outputCheckParams": "/home/student/temp_exfil"
-        }
-      ],
-      "onComplete": "🎉 OPERATION COMPLETE! All missions accomplished! Agent Kira: 'Flawless execution, Ghost. Welcome to Orion.'"
+      "onComplete": "✅ Mission 15 Complete! Workspace cleaned! Agent Kira: 'Perfect. No traces left. Now for the final mission - full system cleanup.'"
     }
   ]
 }

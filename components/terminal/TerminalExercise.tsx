@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { AdventureSelection } from "./AdventureSelection"
 import { WASMTerminal, WASMTerminalRef } from "./WASMTerminal"
 import { MissionOverlay } from "./MissionOverlay"
+import { StoryOverlay } from "./StoryOverlay"
+import { SuccessAnimation } from "./SuccessAnimations"
 import { ConfirmDialog } from "./ConfirmDialog"
 import { Adventure } from "@/lib/terminal/types"
 import { MissionLayer } from "@/lib/terminal/mission-layer"
@@ -21,6 +23,10 @@ export function TerminalExercise() {
   // Reset confirmation dialog state
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
+  
+  // Epilogue and celebration state
+  const [showEpilogue, setShowEpilogue] = useState(false)
+  const [showVictoryAnimation, setShowVictoryAnimation] = useState(false)
   
   // Progress state from MissionLayer - single source of truth
   const [currentMissionIndex, setCurrentMissionIndex] = useState(0)
@@ -126,7 +132,15 @@ export function TerminalExercise() {
   }
 
   const handleAllComplete = () => {
-    console.log('[TerminalExercise] All missions complete!')
+    console.log('[TerminalExercise] All missions complete! 🎉')
+    // First show the epic victory animation
+    setShowVictoryAnimation(true)
+    
+    // After animation, show epilogue
+    setTimeout(() => {
+      setShowVictoryAnimation(false)
+      setShowEpilogue(true)
+    }, 5000) // Victory animation duration
   }
 
   const handleProgressUpdate = (missionIndex: number, taskIndex: number, completed: { tasks: Set<string>, missions: Set<string> }) => {
@@ -266,6 +280,27 @@ export function TerminalExercise() {
         onConfirm={handleConfirmReset}
         onCancel={handleCancelReset}
       />
+
+      {/* Victory Animation - Shown first when all missions complete */}
+      <SuccessAnimation
+        type="adventure"
+        title="🎉 OPERATION COMPLETE 🎉"
+        subtitle="All missions accomplished!"
+        isVisible={showVictoryAnimation}
+        onComplete={() => setShowVictoryAnimation(false)}
+      />
+
+      {/* Epilogue Story Overlay - Shown after victory animation */}
+      {adventure.epilogue && (
+        <StoryOverlay
+          isOpen={showEpilogue}
+          title={adventure.epilogue.title}
+          story={adventure.epilogue.text}
+          agentName={adventure.epilogue.character}
+          onClose={() => setShowEpilogue(false)}
+          onAcknowledge={() => setShowEpilogue(false)}
+        />
+      )}
     </div>
   )
 }

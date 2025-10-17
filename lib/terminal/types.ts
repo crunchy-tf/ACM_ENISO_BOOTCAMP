@@ -67,7 +67,17 @@ export interface Adventure {
   title: string
   description: string
   theme: "cyberpunk" | "scifi"
+  prelude?: {
+    title: string
+    text: string
+    character?: string
+  }
   missions: Mission[]
+  epilogue?: {
+    title: string
+    text: string
+    character?: string
+  }
   initialFileSystem: FileSystem
 }
 

@@ -92,18 +92,42 @@ export class MissionLayer {
     console.log('[MissionLayer] Output (first 150 chars):', context.stdout?.substring(0, 150))
     console.log('[MissionLayer] Task already complete?', task ? this.progress.completedTasks.has(task.id) : 'N/A')
     
+    // 🎮 SECRET CHEAT CODE: Reset current task
+    if (context.stdout?.includes('CHEAT_CODE_ACTIVATED:RESET_TASK')) {
+      console.log('[MissionLayer] 🎮 CHEAT CODE DETECTED - Resetting current task!')
+      if (task) {
+        this.progress.completedTasks.delete(task.id)
+        console.log('[MissionLayer] Task', task.id, 'has been reset and can be completed again')
+      }
+      console.log('[MissionLayer] ========== VALIDATION END ==========')
+      return false
+    }
+    
     // 🎮 SECRET CHEAT CODE: Skip current mission
     if (context.stdout?.includes('CHEAT_CODE_ACTIVATED:SKIP_MISSION')) {
       console.log('[MissionLayer] 🎮 CHEAT CODE DETECTED - Skipping current mission!')
-      if (mission) {
-        // Mark all tasks in current mission as complete
-        mission.tasks.forEach(t => {
-          if (!this.progress.completedTasks.has(t.id)) {
-            this.progress.completedTasks.add(t.id)
+      if (mission && task) {
+        // Only mark the CURRENT task as complete, not all tasks
+        // This prevents conflicts when testing new missions
+        if (!this.progress.completedTasks.has(task.id)) {
+          this.progress.completedTasks.add(task.id)
+          console.log('[MissionLayer] Marked current task as complete:', task.id)
+        }
+        
+        // Move to next task
+        this.progress.currentTaskIndex++
+        
+        // If this was the last task in the mission, complete the mission
+        if (this.progress.currentTaskIndex >= mission.tasks.length) {
+          console.log('[MissionLayer] Last task in mission - completing mission')
+          this.completeMission(mission.id)
+        } else {
+          // Notify listeners of task completion
+          if (this.listeners.onTaskComplete) {
+            this.listeners.onTaskComplete(task.id)
           }
-        })
-        // Complete the mission
-        this.completeMission(mission.id)
+          console.log('[MissionLayer] Moved to next task:', mission.tasks[this.progress.currentTaskIndex]?.id)
+        }
       }
       console.log('[MissionLayer] ========== VALIDATION END ==========')
       return false // Don't count as normal task completion
